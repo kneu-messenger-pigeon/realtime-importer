@@ -1,0 +1,11 @@
+name: Run test
+
+on:
+  workflow_call:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  test:
+    uses: kneu-messenger-pigeon/github-workflows/.github/workflows/test.yaml@main
