@@ -61,8 +61,8 @@ func (importer *CreatedLessonsImporter) addEvent(event LessonCreateEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueue = append(importer.eventQueue, event)
 
-		fmt.Printf(
-			"[%s] receive %T - discipline: %d; added to processing queue \n",
+		fmt.Fprintf(
+			importer.out, "[%s] receive %T - discipline: %d; added to processing queue \n",
 			t(), event, event.GetDisciplineId(),
 		)
 	}
@@ -148,9 +148,7 @@ func (importer *CreatedLessonsImporter) getLessonMaxId() uint {
 
 		} else if err == nil {
 			// storage not exist or empty
-			now := time.Now()
-			today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
-			row := importer.db.QueryRow(LessonDefaultLastIdQuery, today.Format(FirebirdTimeFormat))
+			row := importer.db.QueryRow(LessonDefaultLastIdQuery, getTodayString())
 			err = row.Err()
 			if err == nil {
 				err = row.Scan(&importer.lessonMaxId)
@@ -184,4 +182,9 @@ func (importer *CreatedLessonsImporter) setLessonMaxId(newLastId uint) (err erro
 		}
 	}
 	return
+}
+
+func (importer *CreatedLessonsImporter) waitForNewLessonMaxId() chan uint {
+	importer.lessonMaxIdChan = make(chan uint)
+	return importer.lessonMaxIdChan
 }

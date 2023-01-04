@@ -13,8 +13,6 @@ import (
 	"github.com/segmentio/kafka-go"
 	"io"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
@@ -24,7 +22,7 @@ func main() {
 	os.Exit(handleExitError(os.Stderr, runApp(os.Stdout)))
 }
 
-func runApp(out io.Writer) (err error) {
+func runApp(out io.Writer) error {
 	var awsCfg aws.Config
 	var primaryDekanatDbPool [ConnectionPoolSize]*sql.DB
 
@@ -82,14 +80,16 @@ func runApp(out io.Writer) (err error) {
 		storage: &fileStorage.Storage{
 			File: appConfig.storageDir + "created-lessons-state.txt",
 		},
-		writer: lessonsWriter,
+		writer:     lessonsWriter,
+		eventQueue: []LessonCreateEvent{},
 	}
 
 	editedLessonsImporter := &EditedLessonsImporter{
-		out:    out,
-		db:     primaryDekanatDbPool[1],
-		cache:  fastcache.New(1),
-		writer: lessonsWriter,
+		out:        out,
+		db:         primaryDekanatDbPool[1],
+		cache:      fastcache.New(1),
+		writer:     lessonsWriter,
+		eventQueue: []LessonEditEvent{},
 	}
 
 	updatedScoresImporter := &UpdatedScoresImporter{
@@ -99,14 +99,16 @@ func runApp(out io.Writer) (err error) {
 		storage: &fileStorage.Storage{
 			File: appConfig.storageDir + "update-scores-state.txt",
 		},
-		writer: scoresWriter,
+		writer:     scoresWriter,
+		eventQueue: []ScoreEditEvent{},
 	}
 
 	deletedScoresImporter := &DeletedScoresImporter{
-		out:    out,
-		db:     primaryDekanatDbPool[3],
-		cache:  fastcache.New(1),
-		writer: scoresWriter,
+		out:        out,
+		db:         primaryDekanatDbPool[3],
+		cache:      fastcache.New(1),
+		writer:     scoresWriter,
+		eventQueue: []LessonDeletedEvent{},
 	}
 
 	eventLoop := EventLoop{
@@ -118,16 +120,7 @@ func runApp(out io.Writer) (err error) {
 		deletedScoresImporter:  deletedScoresImporter,
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	defer stop()
-
-	go deleter.execute(ctx)
-	go createdLessonsImporter.execute(ctx)
-	go editedLessonsImporter.execute(ctx)
-	go updatedScoresImporter.execute(ctx)
-	go deletedScoresImporter.execute(ctx)
-
-	eventLoop.execute(ctx)
+	eventLoop.execute()
 	return nil
 }
 

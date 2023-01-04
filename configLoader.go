@@ -39,7 +39,7 @@ func loadConfig(envFilename string) (Config, error) {
 	}
 
 	primaryDekanatPingAttempts, err := strconv.ParseUint(os.Getenv("PRIMARY_DEKANAT_PING_ATTEMPTS"), 10, 8)
-	if primaryDekanatPingAttempts == 0 || err != nil {
+	if err != nil && primaryDekanatPingAttempts == 0 {
 		primaryDekanatPingAttempts = 10
 	}
 

@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"os/signal"
+	"syscall"
 )
 
 type EventLoop struct {
@@ -14,7 +16,16 @@ type EventLoop struct {
 	deletedScoresImporter  *DeletedScoresImporter
 }
 
-func (eventLoop *EventLoop) execute(ctx context.Context) {
+func (eventLoop *EventLoop) execute() {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
+
+	go eventLoop.deleter.execute(ctx)
+	go eventLoop.createdLessonsImporter.execute(ctx)
+	go eventLoop.editedLessonsImporter.execute(ctx)
+	go eventLoop.updatedScoresImporter.execute(ctx)
+	go eventLoop.deletedScoresImporter.execute(ctx)
+
 	go eventLoop.dispatchConfirmedEvent(ctx)
 	eventLoop.dispatchIncomingEvent(ctx)
 }

@@ -50,23 +50,25 @@ func closeRowsAndTransaction(rows *sql.Rows, tx *sql.Tx) {
 func openDbConnect(config *Config) (primaryDekanatDb *sql.DB, err error) {
 	var ctx context.Context
 	var cancel context.CancelFunc
+	primaryDekanatDb, err = sql.Open(config.dekanatDbDriverName, config.primaryDekanatDbDSN)
+	if err != nil {
+		return nil, err
+	}
 	for i := uint8(0); i < config.primaryDekanatPingAttempts; i++ {
-		primaryDekanatDb, err = sql.Open(config.dekanatDbDriverName, config.primaryDekanatDbDSN)
-		if err != nil {
-			return nil, err
+		if primaryDekanatDb == nil {
+			primaryDekanatDb, err = sql.Open(config.dekanatDbDriverName, config.primaryDekanatDbDSN)
 		}
-
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*400)
 		err = primaryDekanatDb.PingContext(ctx)
 		cancel()
 		if err == nil {
-			return
+			break
 		}
 		primaryDekanatDb.Close()
+		primaryDekanatDb = nil
 		time.Sleep(time.Microsecond * 100)
 	}
-
-	return nil, nil
+	return
 }
 
 func createConnectionPool(config *Config) (pool [ConnectionPoolSize]*sql.DB, err error) {
@@ -99,4 +101,10 @@ func closeConnectionPool(pool [ConnectionPoolSize]*sql.DB) {
 
 func extractInPlaceHolder(query string, count int) string {
 	return strings.Replace(query, "?", "?"+strings.Repeat(",?", count-1), 1)
+}
+
+func getTodayString() string {
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+	return today.Format(FirebirdTimeFormat)
 }

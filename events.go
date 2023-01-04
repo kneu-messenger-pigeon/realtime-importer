@@ -67,10 +67,6 @@ func (data *CommonEventData) GetDisciplineId() uint {
 	return parseUint(data.DisciplineId)
 }
 
-func (data *LessonCreateEvent) GetTypeId() uint {
-	return parseUint(data.TypeId)
-}
-
 func (data *LessonEditEvent) GetTypeId() uint8 {
 	return uint8(parseUint(data.TypeId))
 }

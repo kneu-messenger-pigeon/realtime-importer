@@ -8,6 +8,7 @@ import (
 )
 
 type EventDeleterInterface interface {
+	execute(ctx context.Context)
 	Delete(event any)
 }
 

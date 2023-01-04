@@ -61,6 +61,7 @@ func TestLoadConfigFromEnvVars(t *testing.T) {
 	t.Run("EmptyConfig", func(t *testing.T) {
 		_ = os.Setenv("DEKANAT_DB_DRIVER_NAME", "")
 		_ = os.Setenv("PRIMARY_DEKANAT_DB_DSN", "")
+		_ = os.Setenv("PRIMARY_DEKANAT_PING_ATTEMPTS", "")
 		_ = os.Setenv("KAFKA_HOST", "")
 		_ = os.Setenv("KAFKA_TIMEOUT", "")
 		_ = os.Setenv("WORKER_POOL_SIZE", "")

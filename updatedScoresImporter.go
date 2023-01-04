@@ -98,10 +98,10 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 			&event.Value, &event.IsAbsent,
 			&event.UpdatedAt, &event.IsDeleted,
 		)
-		nextLastRegDate = event.UpdatedAt
 		if err != nil {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching score: %s \n", t(), err)
 		} else {
+			nextLastRegDate = event.UpdatedAt
 			payload, _ := json.Marshal(event)
 			messages = append(messages, kafka.Message{
 				Key:   []byte(events.ScoreEventName),
