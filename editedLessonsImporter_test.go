@@ -97,14 +97,15 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 
 		var confirmed LessonEditEvent
 
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*150)
+		ctx, cancel = context.WithCancel(context.Background())
 		go func() {
 			confirmed = <-editedLessonsImporter.confirmed
 			cancel()
 		}()
 
 		go editedLessonsImporter.execute(ctx)
-		<-ctx.Done()
+		time.Sleep(time.Millisecond * 100)
+		cancel()
 		close(editedLessonsImporter.confirmed)
 
 		assert.Equalf(t, lessonEditedEvent, confirmed, "Expect that event will be confirmed")

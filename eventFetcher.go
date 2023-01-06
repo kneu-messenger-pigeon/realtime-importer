@@ -97,8 +97,8 @@ func (fetcher eventFetcher) fetchMessages(context context.Context) (eventMessage
 
 		if msgResult != nil && len(msgResult.Messages) != 0 {
 			err = json.Unmarshal([]byte(*msgResult.Messages[0].Body), &eventMessage)
-			eventMessage.ReceiptHandle = msgResult.Messages[0].ReceiptHandle
 			if err == nil && isValidEventForm(eventMessage.Form) {
+				eventMessage.ReceiptHandle = msgResult.Messages[0].ReceiptHandle
 				return eventMessage
 			} else {
 				fetcher.deleter.Delete(msgResult.Messages[0].ReceiptHandle)
