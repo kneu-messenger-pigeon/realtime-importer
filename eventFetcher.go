@@ -26,7 +26,7 @@ type EventMessage struct {
 
 type eventFetcher struct {
 	out         io.Writer
-	client      *sqs.Client
+	client      SqsApiClientInterface
 	sqsQueueUrl *string
 	deleter     EventDeleterInterface
 }

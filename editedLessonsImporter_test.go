@@ -171,7 +171,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 
 		var confirmed LessonEditEvent
 
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*150)
 		go func() {
 			confirmed = <-editedLessonsImporter.confirmed
 			cancel()

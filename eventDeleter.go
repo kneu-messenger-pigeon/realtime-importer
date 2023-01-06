@@ -14,20 +14,19 @@ type EventDeleterInterface interface {
 
 type EventDeleter struct {
 	out         io.Writer
-	client      *sqs.Client
+	client      SqsApiClientInterface
 	sqsQueueUrl *string
 	queue       chan *string
 }
 
 func (deleter *EventDeleter) execute(ctx context.Context) {
-	if deleter.queue == nil {
-		deleter.queue = make(chan *string)
-	}
+	deleter.queue = make(chan *string)
 	var receiptHandle *string
 
 	for {
 		select {
 		case <-ctx.Done():
+			close(deleter.queue)
 			return
 
 		case receiptHandle = <-deleter.queue:
@@ -46,10 +45,6 @@ func (deleter *EventDeleter) execute(ctx context.Context) {
 }
 
 func (deleter *EventDeleter) Delete(event any) {
-	if deleter.queue == nil {
-		deleter.queue = make(chan *string)
-	}
-
 	var receiptHandle *string
 	switch event.(type) {
 	case *string:
