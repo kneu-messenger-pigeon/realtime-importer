@@ -84,7 +84,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			mock.MatchedBy(expectScoreEventMessage(expectedEvent)),
 		).Return(nil)
 
-		createdLessonsImporter := &DeletedScoresImporter{
+		deletedLessonsImporter := &DeletedScoresImporter{
 			out:    &out,
 			db:     db,
 			cache:  fastcache.New(1),
@@ -92,15 +92,14 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		}
 
 		var confirmed LessonDeletedEvent
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		go createdLessonsImporter.execute(ctx)
-		time.Sleep(time.Nanosecond * 50)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
 		go func() {
-			confirmed = <-createdLessonsImporter.getConfirmed()
+			confirmed = <-deletedLessonsImporter.getConfirmed()
 			cancel()
 		}()
-		time.Sleep(time.Nanosecond * 10)
-		createdLessonsImporter.addEvent(lessonDeletedEvent)
+		deletedLessonsImporter.addEvent(lessonDeletedEvent)
+		time.Sleep(time.Nanosecond * 100)
+		go deletedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, lessonDeletedEvent, confirmed, "Expect that event will be confirmed")
@@ -154,24 +153,24 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			mock.MatchedBy(expectScoreEventMessage(expectedEvent)),
 		).Return(nil)
 
-		createdLessonsImporter := &DeletedScoresImporter{
+		deletedLessonsImporter := &DeletedScoresImporter{
 			out:    &out,
 			db:     db,
 			cache:  fastcache.New(1),
 			writer: writerMock,
 		}
 
-		createdLessonsImporter.addEvent(lessonDeletedEvent)
+		deletedLessonsImporter.addEvent(lessonDeletedEvent)
 
 		var confirmed LessonDeletedEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-createdLessonsImporter.getConfirmed()
+			confirmed = <-deletedLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
-		go createdLessonsImporter.execute(ctx)
+		go deletedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
@@ -232,24 +231,24 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			mock.MatchedBy(expectScoreEventMessage(expectedEvent)),
 		).Return(expectedError)
 
-		createdLessonsImporter := &DeletedScoresImporter{
+		deletedLessonsImporter := &DeletedScoresImporter{
 			out:    &out,
 			db:     db,
 			cache:  fastcache.New(1),
 			writer: writerMock,
 		}
 
-		createdLessonsImporter.addEvent(lessonDeletedEvent)
+		deletedLessonsImporter.addEvent(lessonDeletedEvent)
 
 		var confirmed LessonDeletedEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-createdLessonsImporter.getConfirmed()
+			confirmed = <-deletedLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
-		go createdLessonsImporter.execute(ctx)
+		go deletedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
@@ -297,24 +296,24 @@ func TestImportDeletedScoresLesson(t *testing.T) {
 
 		writerMock := events.NewMockWriterInterface(t)
 
-		createdLessonsImporter := &DeletedScoresImporter{
+		deletedLessonsImporter := &DeletedScoresImporter{
 			out:    &out,
 			db:     db,
 			cache:  fastcache.New(1),
 			writer: writerMock,
 		}
 
-		createdLessonsImporter.addEvent(lessonDeletedEvent)
+		deletedLessonsImporter.addEvent(lessonDeletedEvent)
 
 		var confirmed LessonDeletedEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-createdLessonsImporter.getConfirmed()
+			confirmed = <-deletedLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
-		go createdLessonsImporter.execute(ctx)
+		go deletedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")

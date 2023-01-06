@@ -108,13 +108,13 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		var confirmed ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+		updatedLessonsImporter.addEvent(updatedScoreEvent)
 		go updatedLessonsImporter.execute(ctx)
 		time.Sleep(time.Nanosecond * 200)
 		go func() {
 			confirmed = <-updatedLessonsImporter.getConfirmed()
 			cancel()
 		}()
-		updatedLessonsImporter.addEvent(updatedScoreEvent)
 		<-ctx.Done()
 
 		assert.Equalf(t, updatedScoreEvent, confirmed, "Expect that event will be confirmed")
@@ -175,7 +175,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 
 		var confirmed ScoreEditEvent
 
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
 		go func() {
 			confirmed = <-updatedLessonsImporter.getConfirmed()
 			cancel()

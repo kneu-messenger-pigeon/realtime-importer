@@ -34,7 +34,7 @@ type UpdatedScoresImporter struct {
 }
 
 func (importer *UpdatedScoresImporter) execute(context context.Context) {
-	importer.confirmed = make(chan ScoreEditEvent)
+	importer.initConfirmed()
 
 	var err error
 	nextRun := time.NewTimer(0)
@@ -66,7 +66,14 @@ func (importer *UpdatedScoresImporter) addEvent(event ScoreEditEvent) {
 }
 
 func (importer *UpdatedScoresImporter) getConfirmed() <-chan ScoreEditEvent {
+	importer.initConfirmed()
 	return importer.confirmed
+}
+
+func (importer *UpdatedScoresImporter) initConfirmed() {
+	if importer.confirmed == nil {
+		importer.confirmed = make(chan ScoreEditEvent)
+	}
 }
 
 func (importer *UpdatedScoresImporter) determineConfirmedEvents() {

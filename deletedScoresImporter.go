@@ -30,7 +30,7 @@ type DeletedScoresImporter struct {
 }
 
 func (importer *DeletedScoresImporter) execute(context context.Context) {
-	importer.confirmed = make(chan LessonDeletedEvent)
+	importer.initConfirmed()
 
 	var err error
 	nextRun := time.NewTimer(0)
@@ -59,7 +59,15 @@ func (importer *DeletedScoresImporter) addEvent(event LessonDeletedEvent) {
 }
 
 func (importer *DeletedScoresImporter) getConfirmed() <-chan LessonDeletedEvent {
+	importer.initConfirmed()
+
 	return importer.confirmed
+}
+
+func (importer *DeletedScoresImporter) initConfirmed() {
+	if importer.confirmed == nil {
+		importer.confirmed = make(chan LessonDeletedEvent)
+	}
 }
 
 func (importer *DeletedScoresImporter) determineConfirmedEvents() {

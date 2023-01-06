@@ -93,13 +93,12 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 
 		var confirmed LessonEditEvent
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		go editedLessonsImporter.execute(ctx)
-		time.Sleep(time.Nanosecond * 50)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 		go func() {
 			confirmed = <-editedLessonsImporter.getConfirmed()
 			cancel()
 		}()
+		go editedLessonsImporter.execute(ctx)
 		editedLessonsImporter.addEvent(lessonEditedEvent)
 		<-ctx.Done()
 

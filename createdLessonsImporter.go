@@ -36,7 +36,7 @@ type CreatedLessonsImporter struct {
 }
 
 func (importer *CreatedLessonsImporter) execute(context context.Context) {
-	importer.confirmed = make(chan LessonCreateEvent)
+	importer.initConfirmed()
 
 	var err error
 	nextRun := time.NewTimer(0)
@@ -74,7 +74,14 @@ func (importer *CreatedLessonsImporter) addEvent(event LessonCreateEvent) {
 }
 
 func (importer *CreatedLessonsImporter) getConfirmed() <-chan LessonCreateEvent {
+	importer.initConfirmed()
 	return importer.confirmed
+}
+
+func (importer *CreatedLessonsImporter) initConfirmed() {
+	if importer.confirmed == nil {
+		importer.confirmed = make(chan LessonCreateEvent)
+	}
 }
 
 func (importer *CreatedLessonsImporter) determineConfirmedEvents() {

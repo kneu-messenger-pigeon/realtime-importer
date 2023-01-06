@@ -30,7 +30,9 @@ type EditedLessonsImporter struct {
 }
 
 func (importer *EditedLessonsImporter) execute(context context.Context) {
-	importer.confirmed = make(chan LessonEditEvent)
+	if importer.confirmed == nil {
+		importer.confirmed = make(chan LessonEditEvent)
+	}
 
 	var err error
 	nextRun := time.NewTimer(0)
@@ -38,6 +40,7 @@ func (importer *EditedLessonsImporter) execute(context context.Context) {
 		select {
 		case <-context.Done():
 			close(importer.confirmed)
+			importer.confirmed = nil
 			return
 
 		case <-nextRun.C:
@@ -65,6 +68,10 @@ func (importer *EditedLessonsImporter) addEvent(event LessonEditEvent) {
 }
 
 func (importer *EditedLessonsImporter) getConfirmed() <-chan LessonEditEvent {
+	if importer.confirmed == nil {
+		importer.confirmed = make(chan LessonEditEvent)
+	}
+
 	return importer.confirmed
 }
 
