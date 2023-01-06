@@ -24,8 +24,6 @@ var LessonsSelectExpectedColumns = []string{
 
 func TestExecuteImportCreatedLesson(t *testing.T) {
 	var out bytes.Buffer
-	var ctx context.Context
-	var cancel context.CancelFunc
 	var expectedEvent events.LessonEvent
 
 	var matchContext = mock.MatchedBy(func(ctx context.Context) bool { return true })
@@ -111,7 +109,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 
 		var confirmed LessonCreateEvent
 
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 		go func() {
 			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
@@ -194,7 +192,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		}
 
 		var confirmed LessonCreateEvent
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		createdLessonsImporter.addEvent(lessonCreatedEvent)
 
 		go func() {
@@ -219,8 +217,6 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 
 func TestImportCreatedLesson(t *testing.T) {
 	var out bytes.Buffer
-	var ctx context.Context
-	var cancel context.CancelFunc
 
 	t.Run("Transaction Begin error", func(t *testing.T) {
 		out.Reset()
@@ -245,7 +241,7 @@ func TestImportCreatedLesson(t *testing.T) {
 		}
 
 		var confirmed LessonCreateEvent
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 
 		go func() {
 			confirmed = <-createdLessonsImporter.getConfirmed()

@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os/signal"
 	"syscall"
 )
 
 type EventLoop struct {
+	out                    io.Writer
 	fetcher                EventFetcherInterface
 	deleter                EventDeleterInterface
 	createdLessonsImporter CreatedLessonsImporterInterface
@@ -31,15 +33,14 @@ func (eventLoop *EventLoop) execute() {
 }
 
 func (eventLoop *EventLoop) dispatchIncomingEvent(ctx context.Context) {
-	var lessonDeleteEvent LessonDeletedEvent
+	var lessonDeletedEvent LessonDeletedEvent
 	var lessonEditEvent LessonEditEvent
 
 	for ctx.Err() == nil {
 		event := eventLoop.fetcher.Fetch(ctx)
-		if event == nil {
-			continue
+		if event != nil {
+			fmt.Fprintf(eventLoop.out, "[%s] Receive event %T \n", t(), event)
 		}
-		fmt.Printf("[%s] Receive event %T \n", t(), event)
 
 		switch event.(type) {
 		case ScoreEditEvent:
@@ -52,11 +53,11 @@ func (eventLoop *EventLoop) dispatchIncomingEvent(ctx context.Context) {
 			eventLoop.editedLessonsImporter.addEvent(event.(LessonEditEvent))
 
 		case LessonDeletedEvent:
-			lessonDeleteEvent = event.(LessonDeletedEvent)
-			eventLoop.deletedScoresImporter.addEvent(lessonDeleteEvent)
+			lessonDeletedEvent = event.(LessonDeletedEvent)
+			eventLoop.deletedScoresImporter.addEvent(lessonDeletedEvent)
 
 			lessonEditEvent = LessonEditEvent{
-				CommonEventData: lessonDeleteEvent.CommonEventData,
+				CommonEventData: lessonDeletedEvent.CommonEventData,
 				IsDeleted:       true,
 			}
 			lessonEditEvent.ReceiptHandle = nil

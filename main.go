@@ -112,6 +112,7 @@ func runApp(out io.Writer) error {
 	}
 
 	eventLoop := EventLoop{
+		out:                    out,
 		fetcher:                fetcher,
 		deleter:                deleter,
 		editedLessonsImporter:  editedLessonsImporter,

@@ -19,8 +19,6 @@ import (
 
 func TestExecuteImportDeletedScores(t *testing.T) {
 	var out bytes.Buffer
-	var ctx context.Context
-	var cancel context.CancelFunc
 	var expectedEvent events.ScoreEvent
 
 	var matchContext = mock.MatchedBy(func(ctx context.Context) bool { return true })
@@ -96,7 +94,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		createdLessonsImporter.addEvent(lessonDeletedEvent)
 
 		var confirmed LessonDeletedEvent
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 		go func() {
 			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
@@ -167,7 +165,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 
 		var confirmed LessonDeletedEvent
 
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
 			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
@@ -245,7 +243,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 
 		var confirmed LessonDeletedEvent
 
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
 			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
@@ -268,8 +266,6 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 
 func TestImportDeletedScoresLesson(t *testing.T) {
 	var out bytes.Buffer
-	var ctx context.Context
-	var cancel context.CancelFunc
 
 	t.Run("Transaction Begin error", func(t *testing.T) {
 
@@ -312,7 +308,7 @@ func TestImportDeletedScoresLesson(t *testing.T) {
 
 		var confirmed LessonDeletedEvent
 
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
 			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
