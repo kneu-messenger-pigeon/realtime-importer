@@ -14,6 +14,12 @@ import (
 
 const LessonsEditedQuery = LessonsSelect + ` WHERE ID IN (?) ORDER BY ID ASC`
 
+type EditedLessonsImporterInterface interface {
+	execute(context context.Context)
+	addEvent(event LessonEditEvent)
+	getConfirmed() <-chan LessonEditEvent
+}
+
 type EditedLessonsImporter struct {
 	out        io.Writer
 	db         *sql.DB
@@ -24,15 +30,14 @@ type EditedLessonsImporter struct {
 }
 
 func (importer *EditedLessonsImporter) execute(context context.Context) {
-	if importer.confirmed == nil {
-		importer.confirmed = make(chan LessonEditEvent)
-	}
+	importer.confirmed = make(chan LessonEditEvent)
 
 	var err error
 	nextRun := time.NewTimer(0)
 	for {
 		select {
 		case <-context.Done():
+			close(importer.confirmed)
 			return
 
 		case <-nextRun.C:
@@ -57,6 +62,10 @@ func (importer *EditedLessonsImporter) addEvent(event LessonEditEvent) {
 			t(), event.GetDisciplineId(), event.GetLessonId(),
 		)
 	}
+}
+
+func (importer *EditedLessonsImporter) getConfirmed() <-chan LessonEditEvent {
+	return importer.confirmed
 }
 
 func (importer *EditedLessonsImporter) determineConfirmedEvents() {

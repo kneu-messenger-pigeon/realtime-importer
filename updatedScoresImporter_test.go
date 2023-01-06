@@ -97,7 +97,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			mock.MatchedBy(expectScoreEventMessage(expectedEvent)),
 		).Return(nil)
 
-		createdLessonsImporter := &UpdatedScoresImporter{
+		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:     &out,
 			db:      db,
 			cache:   NewTimeCache(1),
@@ -105,19 +105,18 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			storage: fileStorageMock,
 		}
 
-		createdLessonsImporter.addEvent(updatedScoreEvent)
+		updatedLessonsImporter.addEvent(updatedScoreEvent)
 
 		var confirmed ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-updatedLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
-		go createdLessonsImporter.execute(ctx)
+		go updatedLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, updatedScoreEvent, confirmed, "Expect that event will be confirmed")
 
@@ -165,7 +164,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 
 		writerMock := events.NewMockWriterInterface(t)
 
-		createdLessonsImporter := &UpdatedScoresImporter{
+		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:     &out,
 			db:      db,
 			cache:   NewTimeCache(1),
@@ -173,19 +172,18 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			storage: fileStorageMock,
 		}
 
-		createdLessonsImporter.addEvent(updateScoreEvent)
+		updatedLessonsImporter.addEvent(updateScoreEvent)
 
 		var confirmed ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-updatedLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
-		go createdLessonsImporter.execute(ctx)
+		go updatedLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
 
@@ -254,7 +252,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			mock.MatchedBy(expectScoreEventMessage(expectedEvent)),
 		).Return(expectedError)
 
-		createdLessonsImporter := &UpdatedScoresImporter{
+		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:     &out,
 			db:      db,
 			cache:   NewTimeCache(1),
@@ -262,19 +260,18 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			storage: fileStorageMock,
 		}
 
-		createdLessonsImporter.addEvent(updateScoreEvent)
+		updatedLessonsImporter.addEvent(updateScoreEvent)
 
 		var confirmed ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-updatedLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
-		go createdLessonsImporter.execute(ctx)
+		go updatedLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
 
@@ -326,7 +323,7 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 
 		writerMock := events.NewMockWriterInterface(t)
 
-		createdLessonsImporter := &UpdatedScoresImporter{
+		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:     &out,
 			db:      db,
 			cache:   NewTimeCache(1),
@@ -334,19 +331,18 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 			storage: fileStorageMock,
 		}
 
-		createdLessonsImporter.addEvent(updateScoreEvent)
+		updatedLessonsImporter.addEvent(updateScoreEvent)
 
 		var confirmed ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-updatedLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
-		go createdLessonsImporter.execute(ctx)
+		go updatedLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
 
@@ -370,13 +366,13 @@ func TestGetLastRegDate(t *testing.T) {
 		fileStorageMock := fileStorage.NewMockInterface(t)
 		fileStorageMock.On("Get").Once().Return("", expectedError)
 
-		createdLessonsImporter := &UpdatedScoresImporter{
+		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:     &out,
 			storage: fileStorageMock,
 		}
 
 		mixExpectedLastRegDate := time.Now()
-		actualLastRegDate := createdLessonsImporter.getLastRegDate()
+		actualLastRegDate := updatedLessonsImporter.getLastRegDate()
 
 		assert.True(t, actualLastRegDate.After(mixExpectedLastRegDate))
 		assert.Contains(t, out.String(), "Failed to get score Last Rag Date from file "+expectedError.Error())
@@ -402,12 +398,12 @@ func TestSetLastRegDate(t *testing.T) {
 			"Set", newLastRegDate.Format(StorageTimeFormat),
 		).Once().Return(expectedError)
 
-		createdLessonsImporter := &UpdatedScoresImporter{
+		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:     &out,
 			storage: fileStorageMock,
 		}
 
-		actualError := createdLessonsImporter.setLastRegDate(newLastRegDate)
+		actualError := updatedLessonsImporter.setLastRegDate(newLastRegDate)
 
 		assert.Error(t, actualError)
 		assert.Equal(t, expectedError, actualError)

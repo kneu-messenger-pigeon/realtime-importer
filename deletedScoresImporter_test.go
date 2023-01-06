@@ -96,16 +96,14 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		createdLessonsImporter.addEvent(lessonDeletedEvent)
 
 		var confirmed LessonDeletedEvent
-
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
 		go createdLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, lessonDeletedEvent, confirmed, "Expect that event will be confirmed")
 
@@ -171,13 +169,12 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
 		go createdLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
 
@@ -250,13 +247,12 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
 		go createdLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
 
@@ -318,13 +314,12 @@ func TestImportDeletedScoresLesson(t *testing.T) {
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
 		go createdLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
 

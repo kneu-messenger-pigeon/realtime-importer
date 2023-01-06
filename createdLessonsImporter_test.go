@@ -113,13 +113,12 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
 		}()
 
 		go createdLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, lessonCreatedEvent, confirmed, "Expect that event will be confirmed")
 
@@ -199,12 +198,11 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		createdLessonsImporter.addEvent(lessonCreatedEvent)
 
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
 		}()
 		go createdLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, LessonCreateEvent{}, confirmed, "Expect that event will be confirmed")
 
@@ -250,12 +248,11 @@ func TestImportCreatedLesson(t *testing.T) {
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 
 		go func() {
-			confirmed = <-createdLessonsImporter.confirmed
+			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
 		}()
 		go createdLessonsImporter.execute(ctx)
 		<-ctx.Done()
-		close(createdLessonsImporter.confirmed)
 
 		assert.Equalf(t, LessonCreateEvent{}, confirmed, "Expect that event will be confirmed")
 

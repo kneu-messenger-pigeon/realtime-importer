@@ -10,10 +10,10 @@ import (
 type EventLoop struct {
 	fetcher                EventFetcherInterface
 	deleter                EventDeleterInterface
-	createdLessonsImporter *CreatedLessonsImporter
-	editedLessonsImporter  *EditedLessonsImporter
-	updatedScoresImporter  *UpdatedScoresImporter
-	deletedScoresImporter  *DeletedScoresImporter
+	createdLessonsImporter CreatedLessonsImporterInterface
+	editedLessonsImporter  EditedLessonsImporterInterface
+	updatedScoresImporter  UpdatedScoresImporterInterface
+	deletedScoresImporter  DeletedScoresImporterInterface
 }
 
 func (eventLoop *EventLoop) execute() {
@@ -69,10 +69,10 @@ func (eventLoop *EventLoop) dispatchConfirmedEvent(ctx context.Context) {
 	var event interface{}
 	for ctx.Err() == nil {
 		select {
-		case event = <-eventLoop.createdLessonsImporter.confirmed:
-		case event = <-eventLoop.updatedScoresImporter.confirmed:
-		case event = <-eventLoop.editedLessonsImporter.confirmed:
-		case event = <-eventLoop.deletedScoresImporter.confirmed:
+		case event = <-eventLoop.createdLessonsImporter.getConfirmed():
+		case event = <-eventLoop.updatedScoresImporter.getConfirmed():
+		case event = <-eventLoop.editedLessonsImporter.getConfirmed():
+		case event = <-eventLoop.deletedScoresImporter.getConfirmed():
 		}
 
 		eventLoop.deleter.Delete(event)

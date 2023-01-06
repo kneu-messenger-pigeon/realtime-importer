@@ -16,6 +16,12 @@ const StorageTimeFormat = time.RFC3339
 
 const UpdateScoreQuery = ScoreSelect + ` WHERE REGDATE > ? ORDER BY REGDATE ASC;`
 
+type UpdatedScoresImporterInterface interface {
+	execute(context context.Context)
+	addEvent(event ScoreEditEvent)
+	getConfirmed() <-chan ScoreEditEvent
+}
+
 type UpdatedScoresImporter struct {
 	out         io.Writer
 	db          *sql.DB
@@ -28,9 +34,7 @@ type UpdatedScoresImporter struct {
 }
 
 func (importer *UpdatedScoresImporter) execute(context context.Context) {
-	if importer.confirmed == nil {
-		importer.confirmed = make(chan ScoreEditEvent)
-	}
+	importer.confirmed = make(chan ScoreEditEvent)
 
 	var err error
 	nextRun := time.NewTimer(0)
@@ -59,6 +63,10 @@ func (importer *UpdatedScoresImporter) addEvent(event ScoreEditEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueue = append(importer.eventQueue, event)
 	}
+}
+
+func (importer *UpdatedScoresImporter) getConfirmed() <-chan ScoreEditEvent {
+	return importer.confirmed
 }
 
 func (importer *UpdatedScoresImporter) determineConfirmedEvents() {

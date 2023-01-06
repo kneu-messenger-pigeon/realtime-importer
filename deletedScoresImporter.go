@@ -14,6 +14,12 @@ import (
 
 const DeletedScoreQuery = ScoreSelect + ` WHERE XI_2 IN (?) ORDER BY ID ASC;`
 
+type DeletedScoresImporterInterface interface {
+	execute(context context.Context)
+	addEvent(event LessonDeletedEvent)
+	getConfirmed() <-chan LessonDeletedEvent
+}
+
 type DeletedScoresImporter struct {
 	out        io.Writer
 	db         *sql.DB
@@ -52,6 +58,10 @@ func (importer *DeletedScoresImporter) addEvent(event LessonDeletedEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueue = append(importer.eventQueue, event)
 	}
+}
+
+func (importer *DeletedScoresImporter) getConfirmed() <-chan LessonDeletedEvent {
+	return importer.confirmed
 }
 
 func (importer *DeletedScoresImporter) determineConfirmedEvents() {

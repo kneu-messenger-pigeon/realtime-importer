@@ -17,6 +17,12 @@ const LessonsCreatedQuery = LessonsSelect + ` WHERE ID > ? ORDER BY ID ASC`
 
 const LessonDefaultLastIdQuery = `SELECT FIRST 1 ID FROM T_PRJURN WHERE REGDATE < ? ORDER BY ID DESC`
 
+type CreatedLessonsImporterInterface interface {
+	execute(context context.Context)
+	addEvent(event LessonCreateEvent)
+	getConfirmed() <-chan LessonCreateEvent
+}
+
 type CreatedLessonsImporter struct {
 	out             io.Writer
 	db              *sql.DB
@@ -30,9 +36,7 @@ type CreatedLessonsImporter struct {
 }
 
 func (importer *CreatedLessonsImporter) execute(context context.Context) {
-	if importer.confirmed == nil {
-		importer.confirmed = make(chan LessonCreateEvent)
-	}
+	importer.confirmed = make(chan LessonCreateEvent)
 
 	var err error
 	nextRun := time.NewTimer(0)
@@ -40,6 +44,7 @@ func (importer *CreatedLessonsImporter) execute(context context.Context) {
 	for {
 		select {
 		case <-context.Done():
+			close(importer.confirmed)
 			return
 
 		case <-nextRun.C:
@@ -66,6 +71,10 @@ func (importer *CreatedLessonsImporter) addEvent(event LessonCreateEvent) {
 			t(), event, event.GetDisciplineId(),
 		)
 	}
+}
+
+func (importer *CreatedLessonsImporter) getConfirmed() <-chan LessonCreateEvent {
+	return importer.confirmed
 }
 
 func (importer *CreatedLessonsImporter) determineConfirmedEvents() {
