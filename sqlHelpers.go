@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -56,7 +55,6 @@ func openDbConnect(config *Config) (primaryDekanatDb *sql.DB, err error) {
 		return nil, err
 	}
 	for i := uint8(0); i < config.primaryDekanatPingAttempts; i++ {
-		fmt.Println(config)
 		if primaryDekanatDb == nil {
 			primaryDekanatDb, err = sql.Open(config.dekanatDbDriverName, config.primaryDekanatDbDSN)
 		}

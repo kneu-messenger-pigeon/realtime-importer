@@ -60,8 +60,8 @@ func (importer *EditedLessonsImporter) addEvent(event LessonEditEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueue = append(importer.eventQueue, event)
 
-		fmt.Printf(
-			"[%s] receive LessonEditEvent - discipline: %d; lesson: %d; added to processing queue \n",
+		fmt.Fprintf(
+			importer.out, "[%s] receive LessonEditEvent - discipline: %d; lesson: %d; added to processing queue \n",
 			t(), event.GetDisciplineId(), event.GetLessonId(),
 		)
 	}

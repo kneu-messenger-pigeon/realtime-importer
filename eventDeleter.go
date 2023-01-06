@@ -30,7 +30,7 @@ func (deleter *EventDeleter) execute(ctx context.Context) {
 			return
 
 		case receiptHandle = <-deleter.queue:
-			fmt.Printf("[%s] Deleting message with receipt: %s... \n", t(), (*receiptHandle)[0:10])
+			fmt.Fprintf(deleter.out, "[%s] Deleting message with receipt: %s... \n", t(), (*receiptHandle)[0:10])
 			dMInput := &sqs.DeleteMessageInput{
 				QueueUrl:      deleter.sqsQueueUrl,
 				ReceiptHandle: receiptHandle,

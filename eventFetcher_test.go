@@ -128,7 +128,7 @@ func TestEventFetcher(t *testing.T) {
 
 		assert.IsType(t, ScoreEditEvent{}, actualEvent)
 		event := actualEvent.(ScoreEditEvent)
-		fmt.Println(event.Scores)
+
 		assert.Equal(t, uint(999999), event.GetLessonId())
 		assert.Equal(t, uint(188619), event.GetDisciplineId())
 		assert.Equal(t, "0", event.Semester)
