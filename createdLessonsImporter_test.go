@@ -24,10 +24,8 @@ var LessonsSelectExpectedColumns = []string{
 
 func TestExecuteImportCreatedLesson(t *testing.T) {
 	var out bytes.Buffer
-	var expectedEvent events.LessonEvent
 
 	var matchContext = mock.MatchedBy(func(ctx context.Context) bool { return true })
-
 	disciplineId := 215
 
 	expectLessonEventMessage := func(expected events.LessonEvent) func(kafka.Message) bool {
@@ -47,7 +45,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 	t.Run("New valid lesson", func(t *testing.T) {
 		lastLessonId := 10
 
-		expectedEvent = events.LessonEvent{
+		expectedEvent := events.LessonEvent{
 			Id:           uint(lastLessonId) + 1,
 			DisciplineId: uint(disciplineId),
 			TypeId:       uint8(rand.Intn(10) + 1),
@@ -105,17 +103,16 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			writer:  writerMock,
 		}
 
-		createdLessonsImporter.addEvent(lessonCreatedEvent)
-
 		var confirmed LessonCreateEvent
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		createdLessonsImporter.addEvent(lessonCreatedEvent)
+		go createdLessonsImporter.execute(ctx)
+		time.Sleep(time.Nanosecond * 100)
 		go func() {
 			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
 		}()
-
-		go createdLessonsImporter.execute(ctx)
+		time.Sleep(time.Nanosecond * 100)
 		<-ctx.Done()
 
 		assert.Equalf(t, lessonCreatedEvent, confirmed, "Expect that event will be confirmed")
@@ -133,7 +130,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 
 		lastLessonId := 10
 
-		expectedEvent = events.LessonEvent{
+		expectedEvent := events.LessonEvent{
 			Id:           uint(lastLessonId) + 1,
 			DisciplineId: uint(disciplineId),
 			TypeId:       uint8(rand.Intn(10) + 1),

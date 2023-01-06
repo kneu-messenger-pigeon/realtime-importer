@@ -91,17 +91,16 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			writer: writerMock,
 		}
 
-		editedLessonsImporter.addEvent(lessonEditedEvent)
-
 		var confirmed LessonEditEvent
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		go editedLessonsImporter.execute(ctx)
+		time.Sleep(time.Nanosecond * 50)
 		go func() {
 			confirmed = <-editedLessonsImporter.getConfirmed()
 			cancel()
 		}()
-
-		go editedLessonsImporter.execute(ctx)
+		editedLessonsImporter.addEvent(lessonEditedEvent)
 		<-ctx.Done()
 
 		assert.Equalf(t, lessonEditedEvent, confirmed, "Expect that event will be confirmed")
@@ -164,17 +163,18 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			writer: writerMock,
 		}
 
-		editedLessonsImporter.addEvent(lessonEditedEvent)
-
 		var confirmed LessonEditEvent
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
+		editedLessonsImporter.addEvent(lessonEditedEvent)
+		go editedLessonsImporter.execute(ctx)
+		time.Sleep(time.Nanosecond * 30)
 		go func() {
 			confirmed = <-editedLessonsImporter.getConfirmed()
 			cancel()
 		}()
+		time.Sleep(time.Nanosecond * 30)
 
-		go editedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, lessonEditedEvent, confirmed, "Expect that event will be confirmed")

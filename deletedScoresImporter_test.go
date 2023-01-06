@@ -91,16 +91,16 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			writer: writerMock,
 		}
 
-		createdLessonsImporter.addEvent(lessonDeletedEvent)
-
 		var confirmed LessonDeletedEvent
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		go createdLessonsImporter.execute(ctx)
+		time.Sleep(time.Nanosecond * 50)
 		go func() {
 			confirmed = <-createdLessonsImporter.getConfirmed()
 			cancel()
 		}()
-
-		go createdLessonsImporter.execute(ctx)
+		time.Sleep(time.Nanosecond * 10)
+		createdLessonsImporter.addEvent(lessonDeletedEvent)
 		<-ctx.Done()
 
 		assert.Equalf(t, lessonDeletedEvent, confirmed, "Expect that event will be confirmed")

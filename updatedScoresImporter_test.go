@@ -105,17 +105,16 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			storage: fileStorageMock,
 		}
 
-		updatedLessonsImporter.addEvent(updatedScoreEvent)
-
 		var confirmed ScoreEditEvent
 
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+		go updatedLessonsImporter.execute(ctx)
+		time.Sleep(time.Nanosecond * 200)
 		go func() {
 			confirmed = <-updatedLessonsImporter.getConfirmed()
 			cancel()
 		}()
-
-		go updatedLessonsImporter.execute(ctx)
+		updatedLessonsImporter.addEvent(updatedScoreEvent)
 		<-ctx.Done()
 
 		assert.Equalf(t, updatedScoreEvent, confirmed, "Expect that event will be confirmed")

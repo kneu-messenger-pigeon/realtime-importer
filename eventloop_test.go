@@ -25,16 +25,16 @@ func TestEventLoopExecute(t *testing.T) {
 
 		editedLessonsImporter.On("getConfirmed").Return(func() <-chan LessonEditEvent {
 			return make(chan LessonEditEvent)
-		})
+		}).Maybe()
 		createdLessonsImporter.On("getConfirmed").Return(func() <-chan LessonCreateEvent {
 			return make(chan LessonCreateEvent)
-		})
+		}).Maybe()
 		updatedScoresImporter.On("getConfirmed").Return(func() <-chan ScoreEditEvent {
 			return make(chan ScoreEditEvent)
-		})
+		}).Maybe()
 		deletedScoresImporter.On("getConfirmed").Return(func() <-chan LessonDeletedEvent {
 			return make(chan LessonDeletedEvent)
-		})
+		}).Maybe()
 
 		editedLessonsImporter.On("execute", matchContext).Once().Return()
 		createdLessonsImporter.On("execute", matchContext).Once().Return()
