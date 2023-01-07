@@ -181,7 +181,7 @@ func TestEventLoopDispatchConfirmedEvent(t *testing.T) {
 			deletedScoresImporter:  deletedScoresImporter,
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
 		defer cancel()
 
 		go func() {
@@ -193,7 +193,21 @@ func TestEventLoopDispatchConfirmedEvent(t *testing.T) {
 			cancel()
 		}()
 		time.Sleep(time.Nanosecond * 10)
-		eventLoop.dispatchConfirmedEvent(ctx)
+
+		timeout := time.After(5 * time.Second)
+		done := make(chan bool)
+		go func() {
+			// testing with timeout
+			eventLoop.dispatchConfirmedEvent(ctx)
+			done <- true
+		}()
+
+		select {
+		case <-timeout:
+			cancel()
+			t.Fatal("Test didn't finish in time")
+		case <-done:
+		}
 
 		editedLessonsImporter.AssertExpectations(t)
 		createdLessonsImporter.AssertExpectations(t)

@@ -68,15 +68,16 @@ func (eventLoop *EventLoop) dispatchIncomingEvent(ctx context.Context) {
 
 func (eventLoop *EventLoop) dispatchConfirmedEvent(ctx context.Context) {
 	var event interface{}
-	for ctx.Err() == nil {
+	for {
 		select {
 		case event = <-eventLoop.createdLessonsImporter.getConfirmed():
 		case event = <-eventLoop.updatedScoresImporter.getConfirmed():
 		case event = <-eventLoop.editedLessonsImporter.getConfirmed():
 		case event = <-eventLoop.deletedScoresImporter.getConfirmed():
+		case <-ctx.Done():
+			return
 		}
 
 		eventLoop.deleter.Delete(event)
 	}
-
 }

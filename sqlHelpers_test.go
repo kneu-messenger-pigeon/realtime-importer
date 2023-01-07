@@ -32,7 +32,7 @@ func TestOpenDbConnect(t *testing.T) {
 		}
 
 		go func() {
-			time.Sleep(time.Nanosecond * 50)
+			time.Sleep(time.Nanosecond * 20)
 			config.dekanatDbDriverName = "sqlite3"
 			config.primaryDekanatDbDSN = os.TempDir() + "/test-sqlite.db"
 		}()

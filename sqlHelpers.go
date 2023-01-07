@@ -50,20 +50,30 @@ func closeRowsAndTransaction(rows *sql.Rows, tx *sql.Tx) {
 func openDbConnect(config *Config) (primaryDekanatDb *sql.DB, err error) {
 	var ctx context.Context
 	var cancel context.CancelFunc
-	primaryDekanatDb, err = sql.Open(config.dekanatDbDriverName, config.primaryDekanatDbDSN)
-	if err != nil {
-		return nil, err
-	}
-	for i := uint8(0); i < config.primaryDekanatPingAttempts; i++ {
+	for i := uint8(0); i <= config.primaryDekanatPingAttempts; i++ {
+		if i%2 == 0 {
+			primaryDekanatDb, err = sql.Open(config.dekanatDbDriverName, config.primaryDekanatDbDSN)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if config.primaryDekanatPingAttempts == 0 {
+			return
+		}
+
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*400)
 		err = primaryDekanatDb.PingContext(ctx)
 		cancel()
 		if err == nil {
-			break
+			return
 		}
-		time.Sleep(time.Microsecond * 100)
+		if i%2 == 1 {
+			time.Sleep(time.Microsecond * 100)
+		} else {
+			time.Sleep(time.Second)
+		}
 	}
-	return
+	return nil, err
 }
 
 func createConnectionPool(config *Config) (pool [ConnectionPoolSize]*sql.DB, err error) {
