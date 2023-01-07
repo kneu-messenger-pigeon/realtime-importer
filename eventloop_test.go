@@ -23,18 +23,39 @@ func TestEventLoopExecute(t *testing.T) {
 		deleter := NewMockEventDeleterInterface(t)
 		fetcher := NewMockEventFetcherInterface(t)
 
+		confirmedCalled := make(chan bool)
+
 		editedLessonsImporter.On("getConfirmed").Return(func() <-chan LessonEditEvent {
+			confirmedCalled <- true
 			return make(chan LessonEditEvent)
-		}).Maybe()
+		}).Once()
 		createdLessonsImporter.On("getConfirmed").Return(func() <-chan LessonCreateEvent {
+			confirmedCalled <- true
 			return make(chan LessonCreateEvent)
-		}).Maybe()
+		}).Once()
 		updatedScoresImporter.On("getConfirmed").Return(func() <-chan ScoreEditEvent {
+			confirmedCalled <- true
 			return make(chan ScoreEditEvent)
-		}).Maybe()
+		}).Once()
 		deletedScoresImporter.On("getConfirmed").Return(func() <-chan LessonDeletedEvent {
+			confirmedCalled <- true
 			return make(chan LessonDeletedEvent)
-		}).Maybe()
+		}).Once()
+
+		fetcher.On("Fetch", matchContext).Return(func(ctx context.Context) interface{} {
+			expectedConfirmedCallCount := 4
+			for expectedConfirmedCallCount > 0 {
+				select {
+				case <-confirmedCalled:
+					expectedConfirmedCallCount--
+				case <-time.After(time.Millisecond * 200):
+					expectedConfirmedCallCount = 0
+				}
+			}
+
+			_ = syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+			return nil
+		})
 
 		editedLessonsImporter.On("execute", matchContext).Once().Return()
 		createdLessonsImporter.On("execute", matchContext).Once().Return()
@@ -52,11 +73,6 @@ func TestEventLoopExecute(t *testing.T) {
 			updatedScoresImporter:  updatedScoresImporter,
 			deletedScoresImporter:  deletedScoresImporter,
 		}
-
-		fetcher.On("Fetch", matchContext).Return(func(ctx context.Context) interface{} {
-			_ = syscall.Kill(syscall.Getpid(), syscall.SIGINT)
-			return nil
-		})
 
 		eventLoop.execute()
 
