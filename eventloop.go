@@ -16,6 +16,7 @@ type EventLoop struct {
 	editedLessonsImporter  EditedLessonsImporterInterface
 	updatedScoresImporter  UpdatedScoresImporterInterface
 	deletedScoresImporter  DeletedScoresImporterInterface
+	currentYearWatcher     CurrentYearWatcherInterface
 }
 
 func (eventLoop *EventLoop) execute() {
@@ -23,6 +24,7 @@ func (eventLoop *EventLoop) execute() {
 	defer stop()
 
 	go eventLoop.deleter.execute(ctx)
+	go eventLoop.currentYearWatcher.execute(ctx)
 	go eventLoop.createdLessonsImporter.execute(ctx)
 	go eventLoop.editedLessonsImporter.execute(ctx)
 	go eventLoop.updatedScoresImporter.execute(ctx)

@@ -23,6 +23,8 @@ func TestEventLoopExecute(t *testing.T) {
 		deleter := NewMockEventDeleterInterface(t)
 		fetcher := NewMockEventFetcherInterface(t)
 
+		currentYearWatcher := NewMockCurrentYearWatcherInterface(t)
+
 		confirmedCalled := make(chan bool)
 
 		editedLessonsImporter.On("getConfirmed").Return(func() <-chan LessonEditEvent {
@@ -64,6 +66,7 @@ func TestEventLoopExecute(t *testing.T) {
 		deletedScoresImporter.On("execute", matchContext).Once().Return()
 
 		deleter.On("execute", matchContext).Once().Return()
+		currentYearWatcher.On("execute", matchContext).Once().Return()
 
 		eventLoop := EventLoop{
 			out:                    out,
@@ -73,6 +76,7 @@ func TestEventLoopExecute(t *testing.T) {
 			createdLessonsImporter: createdLessonsImporter,
 			updatedScoresImporter:  updatedScoresImporter,
 			deletedScoresImporter:  deletedScoresImporter,
+			currentYearWatcher:     currentYearWatcher,
 		}
 
 		timeout := time.After(time.Millisecond * 500)

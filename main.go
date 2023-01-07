@@ -73,6 +73,28 @@ func runApp(out io.Writer) error {
 		Balancer: &kafka.LeastBytes{},
 	}
 
+	currentYearWatcher := &CurrentYearWatcher{
+		out: out,
+		reader: kafka.NewReader(
+			kafka.ReaderConfig{
+				Brokers:     []string{appConfig.kafkaHost},
+				GroupID:     "realtime-importer",
+				Topic:       "meta_events",
+				MinBytes:    10,
+				MaxBytes:    10e3,
+				MaxWait:     time.Second,
+				MaxAttempts: appConfig.kafkaAttempts,
+				Dialer: &kafka.Dialer{
+					Timeout:   appConfig.kafkaTimeout,
+					DualStack: kafka.DefaultDialer.DualStack,
+				},
+			},
+		),
+		storage: &fileStorage.Storage{
+			File: appConfig.storageDir + "current-year.txt",
+		},
+	}
+
 	createdLessonsImporter := &CreatedLessonsImporter{
 		out:   out,
 		db:    primaryDekanatDbPool[0],
@@ -119,6 +141,7 @@ func runApp(out io.Writer) error {
 		createdLessonsImporter: createdLessonsImporter,
 		updatedScoresImporter:  updatedScoresImporter,
 		deletedScoresImporter:  deletedScoresImporter,
+		currentYearWatcher:     currentYearWatcher,
 	}
 
 	eventLoop.execute()
