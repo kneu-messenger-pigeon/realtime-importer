@@ -29,6 +29,7 @@ type CreatedLessonsImporter struct {
 	cache           *timeCache
 	writer          events.WriterInterface
 	storage         fileStorage.Interface
+	currentYear     CurrentYearWatcherInterface
 	eventQueue      []LessonCreateEvent
 	confirmed       chan LessonCreateEvent
 	lessonMaxId     uint
@@ -125,6 +126,7 @@ func (importer *CreatedLessonsImporter) pullCreatedLessons() error {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching new lesson: %s \n", t(), err)
 			continue
 		}
+		event.Year = importer.currentYear.getYear()
 		newLastId = event.Id
 		payload, _ := json.Marshal(event)
 		messages = append(messages, kafka.Message{

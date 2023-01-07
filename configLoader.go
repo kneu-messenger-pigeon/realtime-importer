@@ -10,14 +10,16 @@ import (
 )
 
 type Config struct {
-	dekanatDbDriverName        string
-	kafkaHost                  string
-	primaryDekanatDbDSN        string
-	primaryDekanatPingAttempts uint8
-	kafkaTimeout               time.Duration
-	kafkaAttempts              int
-	sqsQueueUrl                string
-	storageDir                 string
+	dekanatDbDriverName          string
+	kafkaHost                    string
+	primaryDekanatDbDSN          string
+	primaryDekanatPingAttempts   uint8
+	primaryDekanatPingDelay      time.Duration
+	primaryDekanatReconnectDelay time.Duration
+	kafkaTimeout                 time.Duration
+	kafkaAttempts                int
+	sqsQueueUrl                  string
+	storageDir                   string
 }
 
 func loadConfig(envFilename string) (Config, error) {
@@ -44,14 +46,16 @@ func loadConfig(envFilename string) (Config, error) {
 	}
 
 	config := Config{
-		dekanatDbDriverName:        os.Getenv("DEKANAT_DB_DRIVER_NAME"),
-		primaryDekanatDbDSN:        os.Getenv("PRIMARY_DEKANAT_DB_DSN"),
-		primaryDekanatPingAttempts: uint8(primaryDekanatPingAttempts),
-		kafkaHost:                  os.Getenv("KAFKA_HOST"),
-		kafkaTimeout:               time.Second * time.Duration(kafkaTimeout),
-		kafkaAttempts:              kafkaAttempts,
-		sqsQueueUrl:                os.Getenv("AWS_SQS_QUEUE_URL"),
-		storageDir:                 os.Getenv("STORAGE_DIR"),
+		dekanatDbDriverName:          os.Getenv("DEKANAT_DB_DRIVER_NAME"),
+		primaryDekanatDbDSN:          os.Getenv("PRIMARY_DEKANAT_DB_DSN"),
+		primaryDekanatPingAttempts:   uint8(primaryDekanatPingAttempts),
+		kafkaHost:                    os.Getenv("KAFKA_HOST"),
+		kafkaTimeout:                 time.Second * time.Duration(kafkaTimeout),
+		kafkaAttempts:                kafkaAttempts,
+		sqsQueueUrl:                  os.Getenv("AWS_SQS_QUEUE_URL"),
+		storageDir:                   os.Getenv("STORAGE_DIR"),
+		primaryDekanatPingDelay:      time.Millisecond * 100,
+		primaryDekanatReconnectDelay: time.Second,
 	}
 
 	if config.dekanatDbDriverName == "" {

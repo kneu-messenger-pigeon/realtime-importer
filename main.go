@@ -102,16 +102,18 @@ func runApp(out io.Writer) error {
 		storage: &fileStorage.Storage{
 			File: appConfig.storageDir + "created-lessons-state.txt",
 		},
-		writer:     lessonsWriter,
-		eventQueue: []LessonCreateEvent{},
+		writer:      lessonsWriter,
+		currentYear: currentYearWatcher,
+		eventQueue:  []LessonCreateEvent{},
 	}
 
 	editedLessonsImporter := &EditedLessonsImporter{
-		out:        out,
-		db:         primaryDekanatDbPool[1],
-		cache:      fastcache.New(1),
-		writer:     lessonsWriter,
-		eventQueue: []LessonEditEvent{},
+		out:         out,
+		db:          primaryDekanatDbPool[1],
+		cache:       fastcache.New(1),
+		writer:      lessonsWriter,
+		currentYear: currentYearWatcher,
+		eventQueue:  []LessonEditEvent{},
 	}
 
 	updatedScoresImporter := &UpdatedScoresImporter{

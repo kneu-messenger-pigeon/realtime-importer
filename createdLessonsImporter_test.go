@@ -50,6 +50,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			DisciplineId: uint(disciplineId),
 			TypeId:       uint8(rand.Intn(10) + 1),
 			Date:         time.Date(2022, 12, 20, 14, 36, 0, 0, time.Local),
+			Year:         2030,
 			Semester:     2,
 			IsDeleted:    false,
 		}
@@ -96,11 +97,12 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		).Return(nil)
 
 		createdLessonsImporter := &CreatedLessonsImporter{
-			out:     &out,
-			db:      db,
-			cache:   NewTimeCache(1),
-			storage: fileStorageMock,
-			writer:  writerMock,
+			out:         &out,
+			db:          db,
+			cache:       NewTimeCache(1),
+			storage:     fileStorageMock,
+			writer:      writerMock,
+			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
 		var confirmed LessonCreateEvent
@@ -135,6 +137,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			DisciplineId: uint(disciplineId),
 			TypeId:       uint8(rand.Intn(10) + 1),
 			Date:         time.Date(2022, 12, 20, 14, 36, 0, 0, time.Local),
+			Year:         2030,
 			Semester:     2,
 			IsDeleted:    false,
 		}
@@ -181,11 +184,12 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		).Return(expectedError)
 
 		createdLessonsImporter := &CreatedLessonsImporter{
-			out:     &out,
-			db:      db,
-			cache:   NewTimeCache(1),
-			storage: fileStorageMock,
-			writer:  writerMock,
+			out:         &out,
+			db:          db,
+			cache:       NewTimeCache(1),
+			storage:     fileStorageMock,
+			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
+			writer:      writerMock,
 		}
 
 		var confirmed LessonCreateEvent

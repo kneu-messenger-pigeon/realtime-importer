@@ -21,12 +21,13 @@ type DeletedScoresImporterInterface interface {
 }
 
 type DeletedScoresImporter struct {
-	out        io.Writer
-	db         *sql.DB
-	cache      *fastcache.Cache
-	writer     events.WriterInterface
-	eventQueue []LessonDeletedEvent
-	confirmed  chan LessonDeletedEvent
+	out         io.Writer
+	db          *sql.DB
+	cache       *fastcache.Cache
+	writer      events.WriterInterface
+	currentYear CurrentYearGetterInterface
+	eventQueue  []LessonDeletedEvent
+	confirmed   chan LessonDeletedEvent
 }
 
 func (importer *DeletedScoresImporter) execute(context context.Context) {
@@ -124,6 +125,7 @@ func (importer *DeletedScoresImporter) pullDeletedScores() error {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching score: %s \n", t(), err)
 			continue
 		}
+		event.Year = importer.currentYear.getYear()
 		payload, _ := json.Marshal(event)
 		messages = append(messages, kafka.Message{
 			Key:   []byte(events.ScoreEventName),

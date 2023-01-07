@@ -28,6 +28,7 @@ type UpdatedScoresImporter struct {
 	cache       *timeCache
 	writer      events.WriterInterface
 	storage     fileStorage.Interface
+	currentYear CurrentYearGetterInterface
 	eventQueue  []ScoreEditEvent
 	confirmed   chan ScoreEditEvent
 	lastRegDate time.Time
@@ -116,6 +117,7 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 		if err != nil {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching score: %s \n", t(), err)
 		} else {
+			event.Year = importer.currentYear.getYear()
 			nextLastRegDate = event.UpdatedAt
 			payload, _ := json.Marshal(event)
 			messages = append(messages, kafka.Message{

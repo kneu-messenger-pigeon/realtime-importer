@@ -56,6 +56,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			LessonId:     130,
 			DisciplineId: 110,
 			Value:        3,
+			Year:         2030,
 			Semester:     2,
 			IsAbsent:     false,
 			IsDeleted:    true,
@@ -98,11 +99,12 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		).Return(nil)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{
-			out:     &out,
-			db:      db,
-			cache:   NewTimeCache(1),
-			writer:  writerMock,
-			storage: fileStorageMock,
+			out:         &out,
+			db:          db,
+			cache:       NewTimeCache(1),
+			writer:      writerMock,
+			storage:     fileStorageMock,
+			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
 		var confirmed ScoreEditEvent
@@ -252,11 +254,12 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		).Return(expectedError)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{
-			out:     &out,
-			db:      db,
-			cache:   NewTimeCache(1),
-			writer:  writerMock,
-			storage: fileStorageMock,
+			out:         &out,
+			db:          db,
+			cache:       NewTimeCache(1),
+			writer:      writerMock,
+			storage:     fileStorageMock,
+			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
 		updatedLessonsImporter.addEvent(updateScoreEvent)

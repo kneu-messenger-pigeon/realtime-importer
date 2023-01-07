@@ -12,9 +12,13 @@ import (
 	"time"
 )
 
-type CurrentYearWatcherInterface interface {
-	execute(context.Context)
+type CurrentYearGetterInterface interface {
 	getYear() int
+}
+
+type CurrentYearWatcherInterface interface {
+	CurrentYearGetterInterface
+	execute(context.Context)
 }
 
 type CurrentYearWatcher struct {
@@ -43,6 +47,7 @@ func (watcher *CurrentYearWatcher) execute(ctx context.Context) {
 				watcher.year = event.Year
 				err = watcher.storage.Set(strconv.Itoa(event.Year))
 			}
+			fmt.Fprintf(watcher.out, "[%s] New year received: %d (err: %v)\n", t(), event.Year, err)
 		}
 
 		if err == nil {

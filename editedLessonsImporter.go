@@ -21,12 +21,13 @@ type EditedLessonsImporterInterface interface {
 }
 
 type EditedLessonsImporter struct {
-	out        io.Writer
-	db         *sql.DB
-	cache      *fastcache.Cache
-	writer     events.WriterInterface
-	eventQueue []LessonEditEvent
-	confirmed  chan LessonEditEvent
+	out         io.Writer
+	db          *sql.DB
+	cache       *fastcache.Cache
+	writer      events.WriterInterface
+	currentYear CurrentYearGetterInterface
+	eventQueue  []LessonEditEvent
+	confirmed   chan LessonEditEvent
 }
 
 func (importer *EditedLessonsImporter) execute(context context.Context) {
@@ -122,6 +123,7 @@ func (importer *EditedLessonsImporter) pullEditedLessons() error {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching new lesson: %s \n", t(), err)
 			continue
 		}
+		event.Year = importer.currentYear.getYear()
 		payload, _ := json.Marshal(event)
 		messages = append(messages, kafka.Message{
 			Key:   []byte(events.LessonEventName),

@@ -85,10 +85,11 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		).Return(nil)
 
 		deletedLessonsImporter := &DeletedScoresImporter{
-			out:    &out,
-			db:     db,
-			cache:  fastcache.New(1),
-			writer: writerMock,
+			out:         &out,
+			db:          db,
+			cache:       fastcache.New(1),
+			writer:      writerMock,
+			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
 		var confirmed LessonDeletedEvent
@@ -116,6 +117,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			LessonId:     130,
 			DisciplineId: 110,
 			Value:        3,
+			Year:         2030,
 			Semester:     2,
 			IsAbsent:     false,
 			IsDeleted:    false,
@@ -154,10 +156,11 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		).Return(nil)
 
 		deletedLessonsImporter := &DeletedScoresImporter{
-			out:    &out,
-			db:     db,
-			cache:  fastcache.New(1),
-			writer: writerMock,
+			out:         &out,
+			db:          db,
+			cache:       fastcache.New(1),
+			writer:      writerMock,
+			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
 		deletedLessonsImporter.addEvent(lessonDeletedEvent)
@@ -190,6 +193,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			LessonId:     130,
 			DisciplineId: 110,
 			Value:        3,
+			Year:         2030,
 			Semester:     2,
 			IsAbsent:     false,
 			IsDeleted:    false,
@@ -232,10 +236,11 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		).Return(expectedError)
 
 		deletedLessonsImporter := &DeletedScoresImporter{
-			out:    &out,
-			db:     db,
-			cache:  fastcache.New(1),
-			writer: writerMock,
+			out:         &out,
+			db:          db,
+			cache:       fastcache.New(1),
+			writer:      writerMock,
+			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
 		deletedLessonsImporter.addEvent(lessonDeletedEvent)
@@ -271,23 +276,13 @@ func TestImportDeletedScoresLesson(t *testing.T) {
 		out.Reset()
 		expectedError := errors.New("expected error")
 
-		expectedEvent := events.ScoreEvent{
-			Id:           501,
-			LessonId:     130,
-			DisciplineId: 110,
-			Value:        3,
-			Semester:     2,
-			IsAbsent:     false,
-			IsDeleted:    false,
-		}
-
 		lessonDeletedEvent := LessonDeletedEvent{
 			CommonEventData: CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
-				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
-				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
-				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
+				LessonId:      "130",
+				DisciplineId:  "110",
+				Semester:      "2",
 			},
 		}
 

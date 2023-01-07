@@ -24,15 +24,17 @@ func TestOpenDbConnect(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("First pint error, then success connect", func(t *testing.T) {
+	t.Run("First ping error, then success connect", func(t *testing.T) {
 		config := Config{
-			dekanatDbDriverName:        "firebirdsql",
-			primaryDekanatDbDSN:        "USER:PASSOWORD@HOST/DATABASE",
-			primaryDekanatPingAttempts: 2,
+			dekanatDbDriverName:          "firebirdsql",
+			primaryDekanatDbDSN:          "USER:PASSOWORD@HOST/DATABASE",
+			primaryDekanatPingAttempts:   3,
+			primaryDekanatPingDelay:      time.Nanosecond * 10,
+			primaryDekanatReconnectDelay: time.Nanosecond * 100,
 		}
 
 		go func() {
-			time.Sleep(time.Nanosecond * 20)
+			time.Sleep(time.Nanosecond * 2)
 			config.dekanatDbDriverName = "sqlite3"
 			config.primaryDekanatDbDSN = os.TempDir() + "/test-sqlite.db"
 		}()

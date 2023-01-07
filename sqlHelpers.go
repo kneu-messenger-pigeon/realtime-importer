@@ -51,7 +51,7 @@ func openDbConnect(config *Config) (primaryDekanatDb *sql.DB, err error) {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	for i := uint8(0); i <= config.primaryDekanatPingAttempts; i++ {
-		if i%2 == 0 {
+		if i%3 == 0 {
 			primaryDekanatDb, err = sql.Open(config.dekanatDbDriverName, config.primaryDekanatDbDSN)
 			if err != nil {
 				return nil, err
@@ -67,10 +67,10 @@ func openDbConnect(config *Config) (primaryDekanatDb *sql.DB, err error) {
 		if err == nil {
 			return
 		}
-		if i%2 == 1 {
-			time.Sleep(time.Microsecond * 100)
+		if i%3 != 2 {
+			time.Sleep(config.primaryDekanatPingDelay)
 		} else {
-			time.Sleep(time.Second)
+			time.Sleep(config.primaryDekanatReconnectDelay)
 		}
 	}
 	return nil, err

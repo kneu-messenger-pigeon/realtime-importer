@@ -10,14 +10,16 @@ import (
 )
 
 var expectedConfig = Config{
-	kafkaHost:                  "KAFKA:9999",
-	dekanatDbDriverName:        "firebird-test",
-	primaryDekanatDbDSN:        "USER:PASSOWORD@HOST/DATABASE",
-	primaryDekanatPingAttempts: 1,
-	kafkaTimeout:               time.Second * 10,
-	kafkaAttempts:              0,
-	sqsQueueUrl:                "https://sqs.EXAMPLE.amazonaws.com/000/url",
-	storageDir:                 "/tmp",
+	kafkaHost:                    "KAFKA:9999",
+	dekanatDbDriverName:          "firebird-test",
+	primaryDekanatDbDSN:          "USER:PASSOWORD@HOST/DATABASE",
+	primaryDekanatPingAttempts:   1,
+	kafkaTimeout:                 time.Second * 10,
+	kafkaAttempts:                0,
+	sqsQueueUrl:                  "https://sqs.EXAMPLE.amazonaws.com/000/url",
+	storageDir:                   "/tmp",
+	primaryDekanatPingDelay:      time.Millisecond * 100,
+	primaryDekanatReconnectDelay: time.Second,
 }
 
 func TestLoadConfigFromEnvVars(t *testing.T) {

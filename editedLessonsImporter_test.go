@@ -48,6 +48,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			DisciplineId: uint(disciplineId),
 			TypeId:       uint8(rand.Intn(10) + 1),
 			Date:         time.Date(2022, 12, 20, 14, 36, 0, 0, time.Local),
+			Year:         2030,
 			Semester:     2,
 			IsDeleted:    false,
 		}
@@ -85,10 +86,11 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		).Return(nil)
 
 		editedLessonsImporter := &EditedLessonsImporter{
-			out:    &out,
-			db:     db,
-			cache:  fastcache.New(1),
-			writer: writerMock,
+			out:         &out,
+			db:          db,
+			cache:       fastcache.New(1),
+			writer:      writerMock,
+			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
 		var confirmed LessonEditEvent
@@ -118,6 +120,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			DisciplineId: uint(disciplineId),
 			TypeId:       uint8(rand.Intn(10) + 1),
 			Date:         time.Date(2022, 12, 20, 14, 36, 0, 0, time.Local),
+			Year:         2030,
 			Semester:     2,
 			IsDeleted:    true,
 		}
@@ -156,10 +159,11 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		).Return(nil)
 
 		editedLessonsImporter := &EditedLessonsImporter{
-			out:    &out,
-			db:     db,
-			cache:  fastcache.New(1),
-			writer: writerMock,
+			out:         &out,
+			db:          db,
+			cache:       fastcache.New(1),
+			writer:      writerMock,
+			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
 		var confirmed LessonEditEvent
@@ -195,6 +199,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			DisciplineId: uint(disciplineId),
 			TypeId:       uint8(rand.Intn(10) + 1),
 			Date:         time.Date(2022, 12, 20, 14, 36, 0, 0, time.Local),
+			Year:         2030,
 			Semester:     2,
 			IsDeleted:    false,
 		}
@@ -235,10 +240,11 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		).Return(expectedError)
 
 		editedLessonsImporter := &EditedLessonsImporter{
-			out:    &out,
-			db:     db,
-			cache:  fastcache.New(1),
-			writer: writerMock,
+			out:         &out,
+			db:          db,
+			cache:       fastcache.New(1),
+			writer:      writerMock,
+			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
 		var confirmed LessonEditEvent
