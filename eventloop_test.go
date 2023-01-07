@@ -43,6 +43,7 @@ func TestEventLoopExecute(t *testing.T) {
 		}).Once()
 
 		fetcher.On("Fetch", matchContext).Return(func(ctx context.Context) interface{} {
+			// wait for call all  `getConfirmed`and then send POSIX-signal to stop eventloop
 			expectedConfirmedCallCount := 4
 			for expectedConfirmedCallCount > 0 {
 				select {
@@ -74,7 +75,18 @@ func TestEventLoopExecute(t *testing.T) {
 			deletedScoresImporter:  deletedScoresImporter,
 		}
 
-		eventLoop.execute()
+		timeout := time.After(time.Millisecond * 500)
+		done := make(chan bool)
+		go func() {
+			eventLoop.execute()
+			done <- true
+		}()
+
+		select {
+		case <-timeout:
+			t.Fatal("Test didn't finish in time")
+		case <-done:
+		}
 
 		editedLessonsImporter.AssertExpectations(t)
 		createdLessonsImporter.AssertExpectations(t)
