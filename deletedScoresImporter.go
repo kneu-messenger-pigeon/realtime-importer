@@ -9,6 +9,7 @@ import (
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/segmentio/kafka-go"
 	"io"
+	"sync"
 	"time"
 )
 
@@ -21,13 +22,14 @@ type DeletedScoresImporterInterface interface {
 }
 
 type DeletedScoresImporter struct {
-	out         io.Writer
-	db          *sql.DB
-	cache       *fastcache.Cache
-	writer      events.WriterInterface
-	currentYear CurrentYearGetterInterface
-	eventQueue  []LessonDeletedEvent
-	confirmed   chan LessonDeletedEvent
+	out             io.Writer
+	db              *sql.DB
+	cache           *fastcache.Cache
+	writer          events.WriterInterface
+	currentYear     CurrentYearGetterInterface
+	eventQueue      []LessonDeletedEvent
+	eventQueueMutex sync.Mutex
+	confirmed       chan LessonDeletedEvent
 }
 
 func (importer *DeletedScoresImporter) execute(context context.Context) {
@@ -55,7 +57,9 @@ func (importer *DeletedScoresImporter) execute(context context.Context) {
 
 func (importer *DeletedScoresImporter) addEvent(event LessonDeletedEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
+		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
+		importer.eventQueueMutex.Unlock()
 	}
 }
 
@@ -77,7 +81,9 @@ func (importer *DeletedScoresImporter) determineConfirmedEvents() {
 		importer.putIntoConfirmedIfSatisfy(&importer.eventQueue[i])
 	}
 
+	importer.eventQueueMutex.Lock()
 	importer.eventQueue = importer.eventQueue[length:len(importer.eventQueue)]
+	importer.eventQueueMutex.Unlock()
 }
 
 func (importer *DeletedScoresImporter) putIntoConfirmedIfSatisfy(event *LessonDeletedEvent) bool {

@@ -9,6 +9,7 @@ import (
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/segmentio/kafka-go"
 	"io"
+	"sync"
 	"time"
 )
 
@@ -21,13 +22,14 @@ type EditedLessonsImporterInterface interface {
 }
 
 type EditedLessonsImporter struct {
-	out         io.Writer
-	db          *sql.DB
-	cache       *fastcache.Cache
-	writer      events.WriterInterface
-	currentYear CurrentYearGetterInterface
-	eventQueue  []LessonEditEvent
-	confirmed   chan LessonEditEvent
+	out             io.Writer
+	db              *sql.DB
+	cache           *fastcache.Cache
+	writer          events.WriterInterface
+	currentYear     CurrentYearGetterInterface
+	eventQueue      []LessonEditEvent
+	eventQueueMutex sync.Mutex
+	confirmed       chan LessonEditEvent
 }
 
 func (importer *EditedLessonsImporter) execute(context context.Context) {
@@ -59,7 +61,9 @@ func (importer *EditedLessonsImporter) execute(context context.Context) {
 
 func (importer *EditedLessonsImporter) addEvent(event LessonEditEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
+		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
+		importer.eventQueueMutex.Unlock()
 
 		fmt.Fprintf(
 			importer.out, "[%s] receive LessonEditEvent - discipline: %d; lesson: %d; added to processing queue \n",
@@ -82,7 +86,9 @@ func (importer *EditedLessonsImporter) determineConfirmedEvents() {
 		importer.putIntoConfirmedIfSatisfy(&importer.eventQueue[i])
 	}
 
+	importer.eventQueueMutex.Lock()
 	importer.eventQueue = importer.eventQueue[length:len(importer.eventQueue)]
+	importer.eventQueueMutex.Unlock()
 }
 
 func (importer *EditedLessonsImporter) putIntoConfirmedIfSatisfy(event *LessonEditEvent) bool {

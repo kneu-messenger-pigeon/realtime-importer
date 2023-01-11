@@ -10,6 +10,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"io"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -31,6 +32,7 @@ type CreatedLessonsImporter struct {
 	storage         fileStorage.Interface
 	currentYear     CurrentYearWatcherInterface
 	eventQueue      []LessonCreateEvent
+	eventQueueMutex sync.Mutex
 	confirmed       chan LessonCreateEvent
 	lessonMaxId     uint
 	lessonMaxIdChan chan uint
@@ -65,7 +67,9 @@ func (importer *CreatedLessonsImporter) execute(context context.Context) {
 
 func (importer *CreatedLessonsImporter) addEvent(event LessonCreateEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
+		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
+		importer.eventQueueMutex.Unlock()
 
 		fmt.Fprintf(
 			importer.out, "[%s] receive %T - discipline: %d; added to processing queue \n",
@@ -91,7 +95,9 @@ func (importer *CreatedLessonsImporter) determineConfirmedEvents() {
 		importer.putIntoConfirmedIfSatisfy(&importer.eventQueue[i])
 	}
 
+	importer.eventQueueMutex.Lock()
 	importer.eventQueue = importer.eventQueue[length:len(importer.eventQueue)]
+	importer.eventQueueMutex.Unlock()
 }
 
 func (importer *CreatedLessonsImporter) putIntoConfirmedIfSatisfy(event *LessonCreateEvent) bool {

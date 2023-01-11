@@ -9,6 +9,7 @@ import (
 	"github.com/kneu-messenger-pigeon/fileStorage"
 	"github.com/segmentio/kafka-go"
 	"io"
+	"sync"
 	"time"
 )
 
@@ -23,15 +24,16 @@ type UpdatedScoresImporterInterface interface {
 }
 
 type UpdatedScoresImporter struct {
-	out         io.Writer
-	db          *sql.DB
-	cache       *timeCache
-	writer      events.WriterInterface
-	storage     fileStorage.Interface
-	currentYear CurrentYearGetterInterface
-	eventQueue  []ScoreEditEvent
-	confirmed   chan ScoreEditEvent
-	lastRegDate time.Time
+	out             io.Writer
+	db              *sql.DB
+	cache           *timeCache
+	writer          events.WriterInterface
+	storage         fileStorage.Interface
+	currentYear     CurrentYearGetterInterface
+	eventQueue      []ScoreEditEvent
+	eventQueueMutex sync.Mutex
+	confirmed       chan ScoreEditEvent
+	lastRegDate     time.Time
 }
 
 func (importer *UpdatedScoresImporter) execute(context context.Context) {
@@ -62,7 +64,9 @@ func (importer *UpdatedScoresImporter) execute(context context.Context) {
 
 func (importer *UpdatedScoresImporter) addEvent(event ScoreEditEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
+		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
+		importer.eventQueueMutex.Unlock()
 	}
 }
 
@@ -83,7 +87,9 @@ func (importer *UpdatedScoresImporter) determineConfirmedEvents() {
 		importer.putIntoConfirmedIfSatisfy(&importer.eventQueue[i])
 	}
 
+	importer.eventQueueMutex.Lock()
 	importer.eventQueue = importer.eventQueue[length:len(importer.eventQueue)]
+	importer.eventQueueMutex.Unlock()
 }
 
 func (importer *UpdatedScoresImporter) putIntoConfirmedIfSatisfy(event *ScoreEditEvent) bool {
