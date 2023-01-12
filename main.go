@@ -123,16 +123,18 @@ func runApp(out io.Writer) error {
 		storage: &fileStorage.Storage{
 			File: appConfig.storageDir + "update-scores-state.txt",
 		},
-		writer:     scoresWriter,
-		eventQueue: []ScoreEditEvent{},
+		writer:      scoresWriter,
+		currentYear: currentYearWatcher,
+		eventQueue:  []ScoreEditEvent{},
 	}
 
 	deletedScoresImporter := &DeletedScoresImporter{
-		out:        out,
-		db:         primaryDekanatDbPool[3],
-		cache:      fastcache.New(1),
-		writer:     scoresWriter,
-		eventQueue: []LessonDeletedEvent{},
+		out:         out,
+		db:          primaryDekanatDbPool[3],
+		cache:       fastcache.New(1),
+		writer:      scoresWriter,
+		currentYear: currentYearWatcher,
+		eventQueue:  []LessonDeletedEvent{},
 	}
 
 	eventLoop := EventLoop{

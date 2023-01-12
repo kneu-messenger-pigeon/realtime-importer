@@ -20,10 +20,11 @@ FROM T_PRJURN `
 const ScoreSelect = `SELECT ID, ID_OBJ AS STUDENT_ID,
 	XI_2 AS LESSON_ID, XI_4 as LESSON_PART,
 	ID_T_PD_CMS AS DISCIPLINE_ID, XI_5 as SEMESTER, 
-	COALESCE(XR_1, 0) AS SCORE, (case COALESCE(XS10_4, 'NULL') when 'NULL' then 0 else 1 end) AS IS_ABSENT,
+	COALESCE(XR_1, 0) AS SCORE,
+	(case COALESCE(XS10_4, 'NULL') when 'NULL' then 0 else 1 end) AS IS_ABSENT,
 	REGDATE, 
     ( case XS10_5
-        when 'Так' then case COALESCE(XR_1, 'NULL') when 'NULL' then 1 else 0 end
+        when 'Так' then case COALESCE(XR_1, XS10_4, 'NULL') when 'NULL' then 1 else 0 end
     	else 1 end ) AS IS_DELETED
 FROM T_EV_9 `
 
