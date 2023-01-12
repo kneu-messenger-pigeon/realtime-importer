@@ -22,7 +22,7 @@ FROM alpine
 ENV TZ=Europe/Kyiv
 RUN apk add tzdata
 
-ENV STORAGE_FILE /storage/storage.txt
+ENV STORAGE_DIR /storage
 RUN mkdir /storage && touch /storage/storage.txt && chmod 777 -R /storage/storage.txt
 
 COPY --from=builder /etc/passwd.nobody /etc/passwd
