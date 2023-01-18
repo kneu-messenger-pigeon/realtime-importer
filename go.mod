@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.7
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.19.17
 	github.com/joho/godotenv v1.4.0
-	github.com/kneu-messenger-pigeon/events v0.1.20
+	github.com/kneu-messenger-pigeon/events v0.1.23
 	github.com/kneu-messenger-pigeon/fileStorage v1.0.1
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/mitchellh/mapstructure v1.5.0
