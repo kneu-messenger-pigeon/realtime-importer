@@ -55,12 +55,14 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			Id:           501,
 			LessonId:     130,
 			DisciplineId: 110,
-			Value:        3,
 			Year:         2030,
 			Semester:     2,
-			IsAbsent:     false,
-			IsDeleted:    true,
-			SyncedAt:     syncedAtRewrite,
+			ScoreValue: events.ScoreValue{
+				Value:     3,
+				IsAbsent:  false,
+				IsDeleted: true,
+			},
+			SyncedAt: syncedAtRewrite,
 		}
 
 		updatedScoreEvent := ScoreEditEvent{
@@ -133,11 +135,13 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			Id:           501,
 			LessonId:     130,
 			DisciplineId: 110,
-			Value:        3,
 			Semester:     2,
-			IsAbsent:     false,
-			IsDeleted:    false,
-			SyncedAt:     syncedAtRewrite,
+			ScoreValue: events.ScoreValue{
+				Value:     3,
+				IsAbsent:  false,
+				IsDeleted: false,
+			},
+			SyncedAt: syncedAtRewrite,
 		}
 
 		updateScoreEvent := ScoreEditEvent{
@@ -204,12 +208,14 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			Id:           501,
 			LessonId:     130,
 			DisciplineId: 110,
-			Value:        3,
 			Semester:     2,
-			IsAbsent:     false,
-			IsDeleted:    false,
-			SyncedAt:     syncedAtRewrite,
-			UpdatedAt:    syncedAtRewrite.Add(-time.Minute),
+			ScoreValue: events.ScoreValue{
+				Value:     3,
+				IsAbsent:  false,
+				IsDeleted: false,
+			},
+			SyncedAt:  syncedAtRewrite,
+			UpdatedAt: syncedAtRewrite.Add(-time.Minute),
 		}
 
 		updateScoreEvent := ScoreEditEvent{
@@ -301,10 +307,12 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 			Id:           501,
 			LessonId:     130,
 			DisciplineId: 110,
-			Value:        3,
 			Semester:     2,
-			IsAbsent:     false,
-			IsDeleted:    false,
+			ScoreValue: events.ScoreValue{
+				Value:     3,
+				IsAbsent:  false,
+				IsDeleted: false,
+			},
 		}
 
 		updateScoreEvent := ScoreEditEvent{
