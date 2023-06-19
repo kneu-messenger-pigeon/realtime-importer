@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/kneu-messenger-pigeon/events"
 	"github.com/kneu-messenger-pigeon/fileStorage"
 	_ "github.com/nakagami/firebirdsql"
 	"github.com/segmentio/kafka-go"
@@ -63,13 +64,13 @@ func runApp(out io.Writer) error {
 
 	lessonsWriter := &kafka.Writer{
 		Addr:     kafka.TCP(appConfig.kafkaHost),
-		Topic:    "raw_lessons",
+		Topic:    events.RawLessonsTopic,
 		Balancer: &kafka.LeastBytes{},
 	}
 
 	scoresWriter := &kafka.Writer{
 		Addr:     kafka.TCP(appConfig.kafkaHost),
-		Topic:    "raw_scores",
+		Topic:    events.RawScoresTopic,
 		Balancer: &kafka.LeastBytes{},
 	}
 
@@ -79,7 +80,7 @@ func runApp(out io.Writer) error {
 			kafka.ReaderConfig{
 				Brokers:     []string{appConfig.kafkaHost},
 				GroupID:     "realtime-importer",
-				Topic:       "meta_events",
+				Topic:       events.MetaEventsTopic,
 				MinBytes:    10,
 				MaxBytes:    10e3,
 				MaxWait:     time.Second,
