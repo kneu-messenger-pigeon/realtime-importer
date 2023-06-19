@@ -26,7 +26,7 @@ ENV TZ=Europe/Kyiv
 RUN apk add tzdata
 
 ENV STORAGE_DIR /storage
-RUN mkdir /storage && touch /storage/storage.txt && chmod 777 -R /storage/storage.txt
+RUN mkdir /storage && chmod 777 -R /storage
 
 COPY --from=builder /etc/passwd.nobody /etc/passwd
 COPY --from=builder /app /app
