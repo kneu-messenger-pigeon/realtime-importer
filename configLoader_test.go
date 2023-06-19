@@ -17,7 +17,7 @@ var expectedConfig = Config{
 	kafkaTimeout:                 time.Second * 10,
 	kafkaAttempts:                0,
 	sqsQueueUrl:                  "https://sqs.EXAMPLE.amazonaws.com/000/url",
-	storageDir:                   "/tmp",
+	storageDir:                   "/tmp/",
 	primaryDekanatPingDelay:      time.Millisecond * 100,
 	primaryDekanatReconnectDelay: time.Second,
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/joho/godotenv"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -58,6 +59,8 @@ func loadConfig(envFilename string) (Config, error) {
 		primaryDekanatReconnectDelay: time.Second,
 	}
 
+	config.storageDir = strings.TrimRight(config.storageDir, "/") + "/"
+
 	if config.dekanatDbDriverName == "" {
 		config.dekanatDbDriverName = "firebirdsql"
 	}
@@ -71,7 +74,7 @@ func loadConfig(envFilename string) (Config, error) {
 	}
 
 	if config.storageDir == "" {
-		config.storageDir = "/tmp"
+		config.storageDir = "/tmp/"
 	}
 
 	return config, nil
