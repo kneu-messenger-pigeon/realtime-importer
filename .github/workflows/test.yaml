@@ -1,11 +1,14 @@
 name: Run test
 
 on:
-  workflow_call:
   push:
     branches-ignore:
       - main
 
 jobs:
   test:
-    uses: kneu-messenger-pigeon/github-workflows/.github/workflows/test.yaml@main
+    permissions:
+      contents: read
+    uses: kneu-messenger-pigeon/github-workflows/.github/workflows/release.yaml@main
+    with:
+      skip_build: true
