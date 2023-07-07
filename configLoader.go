@@ -59,8 +59,6 @@ func loadConfig(envFilename string) (Config, error) {
 		primaryDekanatReconnectDelay: time.Second,
 	}
 
-	config.storageDir = strings.TrimRight(config.storageDir, "/") + "/"
-
 	if config.dekanatDbDriverName == "" {
 		config.dekanatDbDriverName = "firebirdsql"
 	}
@@ -75,6 +73,8 @@ func loadConfig(envFilename string) (Config, error) {
 
 	if config.storageDir == "" {
 		config.storageDir = "/tmp/"
+	} else {
+		config.storageDir = strings.TrimRight(config.storageDir, "/") + "/"
 	}
 
 	return config, nil

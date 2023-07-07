@@ -52,7 +52,7 @@ func (watcher *CurrentYearWatcher) execute(ctx context.Context) {
 
 		if err == nil {
 			err = watcher.reader.CommitMessages(context.Background(), m)
-		} else if ctx.Err() == nil {
+		} else if ctx.Err() != err {
 			fmt.Fprintf(watcher.out, "[%s] Year watcher error: %s \n", t(), err)
 		}
 	}

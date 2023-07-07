@@ -95,6 +95,55 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 		storage.AssertExpectations(t)
 	})
 
+	t.Run("Kafka error", func(t *testing.T) {
+		expectedYear := 2026
+		expectedError := errors.New("expected error")
+
+		var out bytes.Buffer
+		matchContext := mock.MatchedBy(func(ctx context.Context) bool { return true })
+
+		event := events.SecondaryDbLoadedEvent{
+			PreviousSecondaryDatabaseDatetime: time.Date(expectedYear, time.Month(4), 10, 4, 0, 0, 0, time.UTC),
+			CurrentSecondaryDatabaseDatetime:  time.Date(expectedYear, time.Month(4), 11, 4, 0, 0, 0, time.UTC),
+			Year:                              expectedYear,
+		}
+
+		payload, _ := json.Marshal(event)
+		message := kafka.Message{
+			Key:   []byte(events.SecondaryDbLoadedEventName),
+			Value: payload,
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		reader := events.NewMockReaderInterface(t)
+		reader.On("FetchMessage", matchContext).Once().Return(func(ctx context.Context) kafka.Message {
+			cancel()
+			return message
+		}, expectedError)
+
+		storage := fileStorage.NewMockInterface(t)
+		storage.On("Get").Return("2024", nil)
+
+		currentYearWatcher := CurrentYearWatcher{
+			out:     &out,
+			storage: storage,
+			reader:  reader,
+		}
+
+		go func() {
+			time.Sleep(time.Millisecond * 50)
+			cancel()
+		}()
+		currentYearWatcher.execute(ctx)
+
+		stringOutput := out.String()
+		assert.Contains(t, stringOutput, expectedError.Error())
+
+		reader.AssertExpectations(t)
+		storage.AssertExpectations(t)
+	})
+
 	t.Run("Error save to storage", func(t *testing.T) {
 		expectedYear := 2026
 		expectedError := errors.New("expected error")
