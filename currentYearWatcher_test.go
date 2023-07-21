@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/kneu-messenger-pigeon/events"
+	"github.com/kneu-messenger-pigeon/events/mocks"
 	"github.com/kneu-messenger-pigeon/fileStorage"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 	t.Run("defaultYear", func(t *testing.T) {
 		var out bytes.Buffer
 
-		reader := events.NewMockReaderInterface(t)
+		reader := mocks.NewReaderInterface(t)
 		storage := fileStorage.NewMockInterface(t)
 		storage.On("Get").Return("", nil)
 
@@ -62,7 +63,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
-		reader := events.NewMockReaderInterface(t)
+		reader := mocks.NewReaderInterface(t)
 		reader.On("FetchMessage", matchContext).Return(func(ctx context.Context) kafka.Message {
 			cancel()
 			return message
@@ -116,7 +117,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		reader := events.NewMockReaderInterface(t)
+		reader := mocks.NewReaderInterface(t)
 		reader.On("FetchMessage", matchContext).Once().Return(func(ctx context.Context) kafka.Message {
 			cancel()
 			return message
@@ -164,7 +165,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
-		reader := events.NewMockReaderInterface(t)
+		reader := mocks.NewReaderInterface(t)
 		reader.On("FetchMessage", matchContext).Return(func(ctx context.Context) kafka.Message {
 			cancel()
 			return message

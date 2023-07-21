@@ -8,6 +8,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/kneu-messenger-pigeon/events"
+	"github.com/kneu-messenger-pigeon/events/mocks"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -78,7 +79,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
@@ -149,7 +150,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
@@ -230,7 +231,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
@@ -278,7 +279,7 @@ func TestImportEditedLesson(t *testing.T) {
 		db, dbMock, _ := sqlmock.New()
 		dbMock.ExpectBegin().WillReturnError(expectedError)
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 
 		editedLessonsImporter := &EditedLessonsImporter{
 			out:    &out,

@@ -8,6 +8,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/kneu-messenger-pigeon/events"
+	"github.com/kneu-messenger-pigeon/events/mocks"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -79,7 +80,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
@@ -152,7 +153,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
@@ -234,7 +235,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
@@ -295,7 +296,7 @@ func TestImportDeletedScoresLesson(t *testing.T) {
 		db, dbMock, _ := sqlmock.New()
 		dbMock.ExpectBegin().WillReturnError(expectedError)
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 
 		deletedLessonsImporter := &DeletedScoresImporter{
 			out:    &out,

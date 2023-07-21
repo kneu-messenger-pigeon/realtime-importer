@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/kneu-messenger-pigeon/events"
+	"github.com/kneu-messenger-pigeon/events/mocks"
 	"github.com/kneu-messenger-pigeon/fileStorage"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
@@ -89,7 +90,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		fileStorageMock.On("Get").Once().Return("", nil)
 		fileStorageMock.On("Set", strconv.Itoa(int(expectedEvent.Id))).Once().Return(nil)
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
@@ -176,7 +177,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		fileStorageMock.On("Get").Once().Return(strconv.Itoa(lastLessonId), nil)
 		fileStorageMock.On("Set", strconv.Itoa(int(expectedEvent.Id))).Once().Return(nil)
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
@@ -231,7 +232,7 @@ func TestImportCreatedLesson(t *testing.T) {
 		fileStorageMock := fileStorage.NewMockInterface(t)
 		fileStorageMock.On("Get").Once().Return(strconv.Itoa(lastLessonId), nil)
 
-		writerMock := events.NewMockWriterInterface(t)
+		writerMock := mocks.NewWriterInterface(t)
 
 		createdLessonsImporter := &CreatedLessonsImporter{
 			out:     &out,
