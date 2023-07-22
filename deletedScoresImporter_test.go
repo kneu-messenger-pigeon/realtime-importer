@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"regexp"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -21,6 +22,8 @@ import (
 func TestExecuteImportDeletedScores(t *testing.T) {
 	var out bytes.Buffer
 	var expectedEvent events.ScoreEvent
+
+	defaultPollInterval = time.Millisecond * 100
 
 	var matchContext = mock.MatchedBy(func(ctx context.Context) bool { return true })
 
@@ -99,7 +102,9 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
 		go func() {
 			confirmed = <-deletedLessonsImporter.getConfirmed()
+			time.Sleep(defaultPollInterval)
 			cancel()
+			runtime.Gosched()
 		}()
 		deletedLessonsImporter.addEvent(lessonDeletedEvent)
 		time.Sleep(time.Nanosecond * 100)

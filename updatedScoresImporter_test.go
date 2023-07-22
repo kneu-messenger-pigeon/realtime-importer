@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"regexp"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -28,6 +29,9 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	var expectedEvent events.ScoreEvent
+
+	defaultPollInterval = time.Millisecond * 100
+	defaultForcePollInterval = time.Millisecond * 150
 
 	var matchContext = mock.MatchedBy(func(ctx context.Context) bool { return true })
 
@@ -91,7 +95,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		dbMock.ExpectRollback()
 
 		fileStorageMock := fileStorage.NewMockInterface(t)
-		fileStorageMock.On("Get").Once().Return("", nil)
+		fileStorageMock.On("Get").Times(2).Return("", nil)
 		fileStorageMock.On("Set", expectedEvent.UpdatedAt.Format(StorageTimeFormat)).Once().Return(nil)
 
 		writerMock := mocks.NewWriterInterface(t)
@@ -118,7 +122,9 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		time.Sleep(time.Nanosecond * 200)
 		go func() {
 			confirmed = <-updatedLessonsImporter.getConfirmed()
+			time.Sleep(defaultForcePollInterval)
 			cancel()
+			runtime.Gosched()
 		}()
 		<-ctx.Done()
 

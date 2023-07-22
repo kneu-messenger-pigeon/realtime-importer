@@ -38,23 +38,23 @@ func (importer *EditedLessonsImporter) execute(context context.Context) {
 	}
 
 	var err error
-	nextRun := time.NewTimer(0)
+	nextTick := time.Tick(defaultPollInterval)
 	for {
+		if len(importer.eventQueue) != 0 {
+			err = importer.pullEditedLessons()
+			if err != nil {
+				fmt.Fprintf(importer.out, "[%s] Failed to fetch created lessons: %s \n", t(), err)
+			}
+			importer.determineConfirmedEvents()
+		}
+
 		select {
 		case <-context.Done():
 			close(importer.confirmed)
 			importer.confirmed = nil
 			return
 
-		case <-nextRun.C:
-			nextRun = time.NewTimer(time.Second * 3)
-			if len(importer.eventQueue) != 0 {
-				err = importer.pullEditedLessons()
-				if err != nil {
-					fmt.Fprintf(importer.out, "[%s] Failed to fetch created lessons: %s \n", t(), err)
-				}
-				importer.determineConfirmedEvents()
-			}
+		case <-nextTick:
 		}
 	}
 }

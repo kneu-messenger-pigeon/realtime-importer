@@ -36,21 +36,21 @@ func (importer *DeletedScoresImporter) execute(context context.Context) {
 	importer.initConfirmed()
 
 	var err error
-	nextRun := time.NewTimer(0)
+	nextTick := time.Tick(defaultPollInterval)
 	for {
+		if len(importer.eventQueue) != 0 {
+			err = importer.pullDeletedScores()
+			if err != nil {
+				fmt.Fprintf(importer.out, "[%s] Failed to fetch updated scores: %s \n", t(), err)
+			}
+			importer.determineConfirmedEvents()
+		}
+
 		select {
 		case <-context.Done():
 			return
 
-		case <-nextRun.C:
-			nextRun = time.NewTimer(time.Second * 3)
-			if len(importer.eventQueue) != 0 {
-				err = importer.pullDeletedScores()
-				if err != nil {
-					fmt.Fprintf(importer.out, "[%s] Failed to fetch updated scores: %s \n", t(), err)
-				}
-				importer.determineConfirmedEvents()
-			}
+		case <-nextTick:
 		}
 	}
 }

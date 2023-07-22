@@ -42,25 +42,29 @@ func (importer *CreatedLessonsImporter) execute(context context.Context) {
 	importer.initConfirmed()
 
 	var err error
-	nextRun := time.NewTimer(0)
-	nextRequiredRun := time.Now()
+	nextTick := time.Tick(defaultPollInterval)
+	nextRequiredTick := time.Tick(defaultForcePollInterval)
+
+	requiredPoll := true
 	for {
+		if requiredPoll || len(importer.eventQueue) != 0 {
+			requiredPoll = false
+
+			err = importer.pullCreatedLessons()
+			if err != nil {
+				fmt.Fprintf(importer.out, "[%s] Failed to fetch created lessons: %s \n", t(), err)
+			}
+			importer.determineConfirmedEvents()
+		}
+
 		select {
 		case <-context.Done():
 			close(importer.confirmed)
 			return
 
-		case <-nextRun.C:
-			nextRun = time.NewTimer(time.Second * 3)
-			if len(importer.eventQueue) != 0 || time.Now().After(nextRequiredRun) {
-				nextRequiredRun = time.Now().Add(time.Minute * 30)
-
-				err = importer.pullCreatedLessons()
-				if err != nil {
-					fmt.Fprintf(importer.out, "[%s] Failed to fetch created lessons: %s \n", t(), err)
-				}
-				importer.determineConfirmedEvents()
-			}
+		case <-nextTick:
+		case <-nextRequiredTick:
+			requiredPoll = true
 		}
 	}
 }

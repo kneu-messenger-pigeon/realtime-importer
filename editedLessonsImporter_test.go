@@ -27,6 +27,8 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 
 	disciplineId := 215
 
+	defaultPollInterval = time.Millisecond * 100
+
 	expectLessonEventMessage := func(expected events.LessonEvent) func(kafka.Message) bool {
 		var actualEvent events.LessonEvent
 
@@ -100,6 +102,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		go editedLessonsImporter.execute(ctx)
 		editedLessonsImporter.addEvent(lessonEditedEvent)
 		confirmed = <-editedLessonsImporter.getConfirmed()
+		time.Sleep(defaultPollInterval)
 		cancel()
 		time.Sleep(time.Millisecond * 100)
 

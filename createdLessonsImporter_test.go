@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"math/rand"
 	"regexp"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -28,6 +29,9 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 
 	var matchContext = mock.MatchedBy(func(ctx context.Context) bool { return true })
 	disciplineId := 215
+
+	defaultPollInterval = time.Millisecond * 100
+	defaultForcePollInterval = time.Millisecond * 150
 
 	expectLessonEventMessage := func(expected events.LessonEvent) func(kafka.Message) bool {
 		var actualEvent events.LessonEvent
@@ -111,7 +115,9 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 
 		go func() {
 			confirmed = <-createdLessonsImporter.getConfirmed()
+			time.Sleep(defaultForcePollInterval)
 			cancel()
+			runtime.Gosched()
 		}()
 
 		createdLessonsImporter.addEvent(lessonCreatedEvent)
@@ -247,7 +253,9 @@ func TestImportCreatedLesson(t *testing.T) {
 
 		go func() {
 			confirmed = <-createdLessonsImporter.getConfirmed()
+			time.Sleep(defaultPollInterval)
 			cancel()
+			runtime.Gosched()
 		}()
 		go createdLessonsImporter.execute(ctx)
 		<-ctx.Done()

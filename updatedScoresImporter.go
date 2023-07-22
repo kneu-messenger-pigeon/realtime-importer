@@ -40,24 +40,29 @@ func (importer *UpdatedScoresImporter) execute(context context.Context) {
 	importer.initConfirmed()
 
 	var err error
-	nextRun := time.NewTimer(0)
-	nextRequiredRun := time.Now()
+	nextTick := time.Tick(defaultPollInterval)
+	nextRequiredTick := time.Tick(defaultForcePollInterval)
+
+	requiredPoll := true
 	for {
+		if requiredPoll || len(importer.eventQueue) != 0 {
+			requiredPoll = false
+			err = importer.pullUpdatedScores()
+			if err != nil {
+				fmt.Fprintf(importer.out, "[%s] Failed to fetch updated scores: %s \n", t(), err)
+			}
+			importer.determineConfirmedEvents()
+		}
+
 		select {
 		case <-context.Done():
 			return
 
-		case <-nextRun.C:
-			nextRun = time.NewTimer(time.Second * 3)
-			if len(importer.eventQueue) != 0 || time.Now().After(nextRequiredRun) {
-				nextRequiredRun = time.Now().Add(time.Minute * 30)
+		case <-nextTick:
 
-				err = importer.pullUpdatedScores()
-				if err != nil {
-					fmt.Fprintf(importer.out, "[%s] Failed to fetch updated scores: %s \n", t(), err)
-				}
-				importer.determineConfirmedEvents()
-			}
+		case <-nextRequiredTick:
+			requiredPoll = true
+
 		}
 	}
 }

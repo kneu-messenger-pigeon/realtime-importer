@@ -19,6 +19,9 @@ import (
 
 const ExitCodeMainError = 1
 
+var defaultPollInterval = time.Second * 3
+var defaultForcePollInterval = time.Minute * 30
+
 func runApp(out io.Writer) error {
 	var awsCfg aws.Config
 	var primaryDekanatDbPool [ConnectionPoolSize]*sql.DB
