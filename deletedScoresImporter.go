@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const DeletedScoreQuery = ScoreSelect + ` WHERE XI_2 IN (?) ORDER BY ID ASC;`
+const DeletedScoreQuery = ScoreSelect + ` WHERE XI_2 IN (?) ` + ScoreSelectOrderBy
 
 type DeletedScoresImporterInterface interface {
 	execute(context context.Context)

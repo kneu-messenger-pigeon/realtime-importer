@@ -28,6 +28,9 @@ const ScoreSelect = `SELECT ID, ID_OBJ AS STUDENT_ID,
     	else 1 end ) AS IS_DELETED
 FROM T_EV_9 `
 
+// ScoreSelectOrderBy uses `UNIQUE INDEX UNQ1_T_EV_9 ON T_EV_9 (ID_OBJ, XI_2, XI_4)` to have sequential student-score in result
+const ScoreSelectOrderBy = ` ORDER BY ID_OBJ, XI_2, XI_4 ASC`
+
 func queryRowsInTransaction(db *sql.DB, query string, args ...any) (tx *sql.Tx, rows *sql.Rows, err error) {
 	tx, err = db.BeginTx(context.Background(), &sql.TxOptions{
 		Isolation: DefaultTransactionIsolation,
