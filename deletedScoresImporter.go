@@ -41,7 +41,7 @@ func (importer *DeletedScoresImporter) execute(context context.Context) {
 		if len(importer.eventQueue) != 0 {
 			err = importer.pullDeletedScores()
 			if err != nil {
-				fmt.Fprintf(importer.out, "[%s] Failed to fetch updated scores: %s \n", t(), err)
+				fmt.Fprintf(importer.out, "[%s] Failed to fetch deleted scores: %s \n", t(), err)
 			}
 			importer.determineConfirmedEvents()
 		}

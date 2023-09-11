@@ -15,7 +15,7 @@ import (
 
 const StorageTimeFormat = time.RFC3339
 
-const UpdateScoreQuery = ScoreSelect + ` WHERE REGDATE > ?s ` + ScoreSelectOrderBy
+const UpdateScoreQuery = ScoreSelect + ` WHERE REGDATE > ? ` + ScoreSelectOrderBy
 
 type UpdatedScoresImporterInterface interface {
 	execute(context context.Context)
