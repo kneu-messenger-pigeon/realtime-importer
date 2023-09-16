@@ -2,7 +2,10 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"errors"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -89,6 +92,61 @@ func TestRunApp(t *testing.T) {
 		assert.Error(t, err, "Expected for error")
 		assert.Equalf(t, expectedError, err.Error(), "Expected for another error, got %s", err)
 	})
+}
+
+func TestMakeEventLoop(t *testing.T) {
+	pool := [ConnectionPoolSize]*sql.DB{}
+	for i := 0; i < ConnectionPoolSize; i++ {
+		pool[i], _, _ = sqlmock.New()
+	}
+
+	config := &Config{
+		dekanatDbDriverName:          "",
+		kafkaHost:                    "",
+		primaryDekanatDbDSN:          "",
+		primaryDekanatPingAttempts:   0,
+		primaryDekanatPingDelay:      0,
+		primaryDekanatReconnectDelay: 0,
+		kafkaTimeout:                 0,
+		kafkaAttempts:                0,
+		sqsQueueUrl:                  "",
+		storageDir:                   "",
+	}
+
+	awsCfg := aws.Config{}
+
+	eventloop := MakeEventLoop(&bytes.Buffer{}, &pool, config, awsCfg)
+
+	assert.IsType(t, &EventLoop{}, eventloop, "Expected for EventLoop type")
+
+	assert.IsType(t, &eventFetcher{}, eventloop.fetcher, "Expected for EventDeleter type")
+	assert.IsType(t, &EventDeleter{}, eventloop.deleter, "Expected for EventDeleter type")
+
+	assert.IsType(t, &CreatedLessonsImporter{}, eventloop.createdLessonsImporter, "Expected for CreatedLessonsImporter type")
+	assert.IsType(t, &EditedLessonsImporter{}, eventloop.editedLessonsImporter, "Expected for EditedLessonsImporter type")
+	assert.IsType(t, &UpdatedScoresImporter{}, eventloop.updatedScoresImporter, "Expected for UpdatedScoresImporter type")
+	assert.IsType(t, &DeletedScoresImporter{}, eventloop.deletedScoresImporter, "Expected for DeletedScoresImporter type")
+
+	assert.IsType(t, &CurrentYearWatcher{}, eventloop.currentYearWatcher, "Expected for CurrentYearWatcher type")
+
+	createdLessonsImporter := eventloop.createdLessonsImporter.(*CreatedLessonsImporter)
+	assert.Equal(t, eventloop.out, createdLessonsImporter.out, "Expected for same out")
+	assert.Equal(t, pool[0], createdLessonsImporter.db, "Expected for same db")
+	assert.IsType(t, &MaxLessonId{}, createdLessonsImporter.editScoresMaxLessonId, "Expected for MaxLessonId type")
+
+	editedLessonsImporter := eventloop.editedLessonsImporter.(*EditedLessonsImporter)
+	assert.Equal(t, eventloop.out, editedLessonsImporter.out, "Expected for same out")
+	assert.Equal(t, pool[1], editedLessonsImporter.db, "Expected for same db")
+
+	updatedScoresImporter := eventloop.updatedScoresImporter.(*UpdatedScoresImporter)
+	assert.Equal(t, eventloop.out, updatedScoresImporter.out, "Expected for same out")
+	assert.Equal(t, pool[2], updatedScoresImporter.db, "Expected for same db")
+	assert.IsType(t, &MaxLessonId{}, updatedScoresImporter.maxLessonId, "Expected for MaxLessonId type")
+	assert.Equal(t, createdLessonsImporter.editScoresMaxLessonId, updatedScoresImporter.maxLessonId)
+
+	deletedScoresImporter := eventloop.deletedScoresImporter.(*DeletedScoresImporter)
+	assert.Equal(t, eventloop.out, deletedScoresImporter.out, "Expected for same out")
+	assert.Equal(t, pool[3], deletedScoresImporter.db, "Expected for same db")
 }
 
 func TestHandleExitError(t *testing.T) {

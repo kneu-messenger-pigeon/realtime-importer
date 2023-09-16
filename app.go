@@ -47,6 +47,11 @@ func runApp(out io.Writer) error {
 	if err != nil {
 		return err
 	}
+	MakeEventLoop(out, &primaryDekanatDbPool, &appConfig, awsCfg).execute()
+	return nil
+}
+
+func MakeEventLoop(out io.Writer, dbPool *[ConnectionPoolSize]*sql.DB, appConfig *Config, awsCfg aws.Config) *EventLoop {
 	client := sqs.NewFromConfig(awsCfg)
 	deleter := &EventDeleter{
 		out:         out,
@@ -95,21 +100,24 @@ func runApp(out io.Writer) error {
 		},
 	}
 
+	editScoresLessonId := &MaxLessonId{}
+
 	createdLessonsImporter := &CreatedLessonsImporter{
 		out:   out,
-		db:    primaryDekanatDbPool[0],
+		db:    dbPool[0],
 		cache: NewTimeCache(1),
 		storage: &fileStorage.Storage{
 			File: appConfig.storageDir + "created-lessons-state.txt",
 		},
-		writer:      lessonsWriter,
-		currentYear: currentYearWatcher,
-		eventQueue:  []LessonCreateEvent{},
+		writer:                lessonsWriter,
+		currentYear:           currentYearWatcher,
+		eventQueue:            []LessonCreateEvent{},
+		editScoresMaxLessonId: editScoresLessonId,
 	}
 
 	editedLessonsImporter := &EditedLessonsImporter{
 		out:         out,
-		db:          primaryDekanatDbPool[1],
+		db:          dbPool[1],
 		cache:       fastcache.New(1),
 		writer:      lessonsWriter,
 		currentYear: currentYearWatcher,
@@ -118,7 +126,7 @@ func runApp(out io.Writer) error {
 
 	updatedScoresImporter := &UpdatedScoresImporter{
 		out:   out,
-		db:    primaryDekanatDbPool[2],
+		db:    dbPool[2],
 		cache: NewTimeCache(1),
 		storage: &fileStorage.Storage{
 			File: appConfig.storageDir + "update-scores-state.txt",
@@ -126,11 +134,12 @@ func runApp(out io.Writer) error {
 		writer:      scoresWriter,
 		currentYear: currentYearWatcher,
 		eventQueue:  []ScoreEditEvent{},
+		maxLessonId: editScoresLessonId,
 	}
 
 	deletedScoresImporter := &DeletedScoresImporter{
 		out:         out,
-		db:          primaryDekanatDbPool[3],
+		db:          dbPool[3],
 		cache:       fastcache.New(1),
 		writer:      scoresWriter,
 		currentYear: currentYearWatcher,
@@ -148,8 +157,7 @@ func runApp(out io.Writer) error {
 		currentYearWatcher:     currentYearWatcher,
 	}
 
-	eventLoop.execute()
-	return nil
+	return &eventLoop
 }
 
 func handleExitError(errStream io.Writer, err error) int {
