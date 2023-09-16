@@ -43,7 +43,7 @@ func (importer *EditedLessonsImporter) execute(context context.Context) {
 		if len(importer.eventQueue) != 0 {
 			err = importer.pullEditedLessons()
 			if err != nil {
-				fmt.Fprintf(importer.out, "[%s] Failed to fetch created lessons: %s \n", t(), err)
+				fmt.Fprintf(importer.out, "[%s] Failed to fetch edited lessons: %s \n", t(), err)
 			}
 			importer.determineConfirmedEvents()
 		}
