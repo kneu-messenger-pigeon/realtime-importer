@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
@@ -118,5 +119,53 @@ func TestConnectionPool(t *testing.T) {
 		for i := 0; i < ConnectionPoolSize; i++ {
 			assert.NoError(t, dbMock[i].ExpectationsWereMet())
 		}
+	})
+}
+
+func TestQueryRowsInTransaction(t *testing.T) {
+	query := "SELECT 1 FROM T_PRJURN"
+
+	t.Run("connect error", func(t *testing.T) {
+		db, dbMock, _ := sqlmock.New()
+
+		dbMock.ExpectBegin().WillReturnError(errors.New(ConnectError))
+		dbMock.ExpectBegin()
+
+		dbMock.ExpectQuery(query).WillReturnRows(
+			sqlmock.NewRows([]string{"1"}).AddRow(1),
+		)
+
+		startTime := time.Now()
+		_, rows, err := queryRowsInTransaction(db, query)
+		executedTime := time.Since(startTime)
+
+		value := 0
+
+		assert.NoError(t, err)
+		assert.True(t, rows.Next())
+		assert.NoError(t, rows.Scan(&value))
+		assert.Equal(t, 1, value)
+		assert.GreaterOrEqual(t, executedTime.Milliseconds(), int64(250))
+		assert.NoError(t, dbMock.ExpectationsWereMet())
+	})
+
+	t.Run("all time connect error", func(t *testing.T) {
+		db, dbMock, _ := sqlmock.New()
+
+		dbMock.ExpectBegin().WillReturnError(errors.New(ConnectError))
+		dbMock.ExpectBegin().WillReturnError(errors.New(ConnectError))
+		dbMock.ExpectBegin().WillReturnError(errors.New(ConnectError))
+
+		dbMock.ExpectQuery(query).WillReturnRows(
+			sqlmock.NewRows([]string{"1"}).AddRow(1),
+		)
+
+		startTime := time.Now()
+		_, _, err := queryRowsInTransaction(db, query)
+		executedTime := time.Since(startTime)
+
+		assert.Error(t, err)
+		assert.Equal(t, ConnectError, err.Error())
+		assert.GreaterOrEqual(t, executedTime.Milliseconds(), int64(250)*3)
 	})
 }
