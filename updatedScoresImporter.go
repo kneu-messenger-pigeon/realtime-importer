@@ -34,6 +34,7 @@ type UpdatedScoresImporter struct {
 	eventQueueMutex sync.Mutex
 	confirmed       chan ScoreEditEvent
 	lastRegDate     time.Time
+	maxLessonId     MaxLessonIdSetterInterface
 }
 
 func (importer *UpdatedScoresImporter) execute(context context.Context) {
@@ -58,11 +59,10 @@ func (importer *UpdatedScoresImporter) execute(context context.Context) {
 		case <-context.Done():
 			return
 
-		case <-nextTick:
-
 		case <-nextRequiredTick:
 			requiredPoll = true
 
+		case <-nextTick:
 		}
 	}
 }
@@ -72,6 +72,8 @@ func (importer *UpdatedScoresImporter) addEvent(event ScoreEditEvent) {
 		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
 		importer.eventQueueMutex.Unlock()
+
+		importer.maxLessonId.Set(event.GetLessonId())
 	}
 }
 
@@ -136,6 +138,7 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 				Value: payload,
 			})
 			lessonUpdatedMap[event.LessonId] = event.UpdatedAt
+			importer.maxLessonId.Set(event.LessonId)
 		}
 	}
 	err = nil

@@ -25,17 +25,18 @@ type CreatedLessonsImporterInterface interface {
 }
 
 type CreatedLessonsImporter struct {
-	out             io.Writer
-	db              *sql.DB
-	cache           *timeCache
-	writer          events.WriterInterface
-	storage         fileStorage.Interface
-	currentYear     CurrentYearWatcherInterface
-	eventQueue      []LessonCreateEvent
-	eventQueueMutex sync.Mutex
-	confirmed       chan LessonCreateEvent
-	lessonMaxId     uint
-	lessonMaxIdChan chan uint
+	out                   io.Writer
+	db                    *sql.DB
+	cache                 *timeCache
+	writer                events.WriterInterface
+	storage               fileStorage.Interface
+	currentYear           CurrentYearWatcherInterface
+	eventQueue            []LessonCreateEvent
+	eventQueueMutex       sync.Mutex
+	confirmed             chan LessonCreateEvent
+	lessonMaxId           uint
+	lessonMaxIdChan       chan uint
+	editScoresMaxLessonId MaxLessonIdGetterInterface
 }
 
 func (importer *CreatedLessonsImporter) execute(context context.Context) {
@@ -47,7 +48,7 @@ func (importer *CreatedLessonsImporter) execute(context context.Context) {
 
 	requiredPoll := true
 	for {
-		if requiredPoll || len(importer.eventQueue) != 0 {
+		if requiredPoll || len(importer.eventQueue) != 0 || importer.editScoresMaxLessonId.Get() > importer.getLessonMaxId() {
 			requiredPoll = false
 
 			err = importer.pullCreatedLessons()
@@ -62,9 +63,9 @@ func (importer *CreatedLessonsImporter) execute(context context.Context) {
 			close(importer.confirmed)
 			return
 
-		case <-nextTick:
 		case <-nextRequiredTick:
 			requiredPoll = true
+		case <-nextTick:
 		}
 	}
 }

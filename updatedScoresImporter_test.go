@@ -7,11 +7,12 @@ import (
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/kneu-messenger-pigeon/events"
-	"github.com/kneu-messenger-pigeon/events/mocks"
+	eventsMocks "github.com/kneu-messenger-pigeon/events/mocks"
 	"github.com/kneu-messenger-pigeon/fileStorage"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"realtime-importer/mocks"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -98,12 +99,15 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		fileStorageMock.On("Get").Times(2).Return("", nil)
 		fileStorageMock.On("Set", expectedEvent.UpdatedAt.Format(StorageTimeFormat)).Once().Return(nil)
 
-		writerMock := mocks.NewWriterInterface(t)
+		writerMock := eventsMocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
 			mock.MatchedBy(expectScoreEventMessage(expectedEvent)),
 		).Return(nil)
+
+		maxLessonIdSetter := mocks.NewMaxLessonIdSetterInterface(t)
+		maxLessonIdSetter.On("Set", expectedEvent.LessonId).Times(2).Return(nil)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:         &out,
@@ -112,12 +116,15 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			writer:      writerMock,
 			storage:     fileStorageMock,
 			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
+			maxLessonId: maxLessonIdSetter,
 		}
 
 		var confirmed ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 		updatedLessonsImporter.addEvent(updatedScoreEvent)
+		maxLessonIdSetter.AssertCalled(t, "Set", expectedEvent.LessonId)
+
 		go updatedLessonsImporter.execute(ctx)
 		time.Sleep(time.Nanosecond * 200)
 		go func() {
@@ -129,9 +136,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		<-ctx.Done()
 
 		assert.Equalf(t, updatedScoreEvent, confirmed, "Expect that event will be confirmed")
-
-		err := dbMock.ExpectationsWereMet()
-		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
+		assert.NoError(t, dbMock.ExpectationsWereMet())
 
 		writerMock.AssertExpectations(t)
 		fileStorageMock.AssertExpectations(t)
@@ -174,17 +179,22 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		fileStorageMock := fileStorage.NewMockInterface(t)
 		fileStorageMock.On("Get").Once().Return(lastRegDate.Format(StorageTimeFormat), nil)
 
-		writerMock := mocks.NewWriterInterface(t)
+		writerMock := eventsMocks.NewWriterInterface(t)
+
+		maxLessonIdSetter := mocks.NewMaxLessonIdSetterInterface(t)
+		maxLessonIdSetter.On("Set", expectedEvent.LessonId).Once().Return(nil)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{
-			out:     &out,
-			db:      db,
-			cache:   NewTimeCache(1),
-			writer:  writerMock,
-			storage: fileStorageMock,
+			out:         &out,
+			db:          db,
+			cache:       NewTimeCache(1),
+			writer:      writerMock,
+			storage:     fileStorageMock,
+			maxLessonId: maxLessonIdSetter,
 		}
 
 		updatedLessonsImporter.addEvent(updateScoreEvent)
+		maxLessonIdSetter.AssertCalled(t, "Set", expectedEvent.LessonId)
 
 		var confirmed ScoreEditEvent
 
@@ -259,12 +269,15 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			"Set", expectedEvent.UpdatedAt.Format(StorageTimeFormat),
 		).Once().Return(nil)
 
-		writerMock := mocks.NewWriterInterface(t)
+		writerMock := eventsMocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
 			mock.MatchedBy(expectScoreEventMessage(expectedEvent)),
 		).Return(expectedError)
+
+		maxLessonIdSetter := mocks.NewMaxLessonIdSetterInterface(t)
+		maxLessonIdSetter.On("Set", expectedEvent.LessonId).Times(2).Return(nil)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:         &out,
@@ -273,6 +286,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			writer:      writerMock,
 			storage:     fileStorageMock,
 			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
+			maxLessonId: maxLessonIdSetter,
 		}
 
 		updatedLessonsImporter.addEvent(updateScoreEvent)
@@ -338,14 +352,18 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 		fileStorageMock := fileStorage.NewMockInterface(t)
 		fileStorageMock.On("Get").Once().Return("", nil)
 
-		writerMock := mocks.NewWriterInterface(t)
+		writerMock := eventsMocks.NewWriterInterface(t)
+
+		maxLessonIdSetter := mocks.NewMaxLessonIdSetterInterface(t)
+		maxLessonIdSetter.On("Set", expectedEvent.LessonId).Once().Return(nil)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{
-			out:     &out,
-			db:      db,
-			cache:   NewTimeCache(1),
-			writer:  writerMock,
-			storage: fileStorageMock,
+			out:         &out,
+			db:          db,
+			cache:       NewTimeCache(1),
+			writer:      writerMock,
+			storage:     fileStorageMock,
+			maxLessonId: maxLessonIdSetter,
 		}
 
 		updatedLessonsImporter.addEvent(updateScoreEvent)

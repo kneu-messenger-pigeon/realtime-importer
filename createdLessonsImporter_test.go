@@ -7,12 +7,13 @@ import (
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/kneu-messenger-pigeon/events"
-	"github.com/kneu-messenger-pigeon/events/mocks"
+	eventsMocks "github.com/kneu-messenger-pigeon/events/mocks"
 	"github.com/kneu-messenger-pigeon/fileStorage"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"math/rand"
+	"realtime-importer/mocks"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -94,20 +95,24 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		fileStorageMock.On("Get").Once().Return("", nil)
 		fileStorageMock.On("Set", strconv.Itoa(int(expectedEvent.Id))).Once().Return(nil)
 
-		writerMock := mocks.NewWriterInterface(t)
+		writerMock := eventsMocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
 			mock.MatchedBy(expectLessonEventMessage(expectedEvent)),
 		).Return(nil)
 
+		editScoresMaxLessonId := mocks.NewMaxLessonIdGetterInterface(t)
+		editScoresMaxLessonId.On("Get").Return(uint(0))
+
 		createdLessonsImporter := &CreatedLessonsImporter{
-			out:         &out,
-			db:          db,
-			cache:       NewTimeCache(1),
-			storage:     fileStorageMock,
-			writer:      writerMock,
-			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
+			out:                   &out,
+			db:                    db,
+			cache:                 NewTimeCache(1),
+			storage:               fileStorageMock,
+			writer:                writerMock,
+			currentYear:           NewMockCurrentYearGetter(t, expectedEvent.Year),
+			editScoresMaxLessonId: editScoresMaxLessonId,
 		}
 
 		var confirmed LessonCreateEvent
@@ -125,6 +130,70 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		<-ctx.Done()
 
 		assert.Equalf(t, lessonCreatedEvent, confirmed, "Expect that event will be confirmed")
+
+		err := dbMock.ExpectationsWereMet()
+		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
+
+		writerMock.AssertExpectations(t)
+		fileStorageMock.AssertExpectations(t)
+	})
+
+	t.Run("LessonIdFromEditedScore", func(t *testing.T) {
+		lastLessonId := 10
+
+		expectedEvent := events.LessonEvent{
+			Id:           uint(lastLessonId) + 1,
+			DisciplineId: uint(disciplineId),
+			TypeId:       uint8(rand.Intn(10) + 1),
+			Date:         time.Date(2022, 12, 20, 14, 36, 0, 0, time.Local),
+			Year:         2030,
+			Semester:     2,
+			IsDeleted:    false,
+		}
+
+		db, dbMock, _ := sqlmock.New()
+		dbMock.ExpectQuery(regexp.QuoteMeta(LessonDefaultLastIdQuery)).WithArgs(
+			getTodayString(),
+		).WillReturnRows(
+			sqlmock.NewRows([]string{"ID"}).AddRow(strconv.Itoa(lastLessonId)),
+		)
+		dbMock.ExpectBegin()
+		dbMock.ExpectQuery(regexp.QuoteMeta(LessonsCreatedQuery)).WithArgs(
+			lastLessonId,
+		).WillReturnRows(
+			sqlmock.NewRows(LessonsSelectExpectedColumns).AddRow(
+				expectedEvent.Id, expectedEvent.DisciplineId, expectedEvent.Date,
+				expectedEvent.TypeId, expectedEvent.Semester, expectedEvent.IsDeleted,
+			),
+		)
+		dbMock.ExpectRollback()
+
+		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock.On("Get").Once().Return("", nil)
+		fileStorageMock.On("Set", strconv.Itoa(int(expectedEvent.Id))).Once().Return(nil)
+
+		writerMock := eventsMocks.NewWriterInterface(t)
+		writerMock.On("WriteMessages", matchContext, mock.MatchedBy(expectLessonEventMessage(expectedEvent))).
+			Return(nil)
+
+		editScoresMaxLessonId := mocks.NewMaxLessonIdGetterInterface(t)
+		editScoresMaxLessonId.On("Get").Return(expectedEvent.Id)
+
+		createdLessonsImporter := &CreatedLessonsImporter{
+			out:                   &out,
+			db:                    db,
+			cache:                 NewTimeCache(1),
+			storage:               fileStorageMock,
+			writer:                writerMock,
+			currentYear:           NewMockCurrentYearGetter(t, expectedEvent.Year),
+			editScoresMaxLessonId: editScoresMaxLessonId,
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+		defer cancel()
+
+		go createdLessonsImporter.execute(ctx)
+		<-ctx.Done()
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
@@ -183,7 +252,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		fileStorageMock.On("Get").Once().Return(strconv.Itoa(lastLessonId), nil)
 		fileStorageMock.On("Set", strconv.Itoa(int(expectedEvent.Id))).Once().Return(nil)
 
-		writerMock := mocks.NewWriterInterface(t)
+		writerMock := eventsMocks.NewWriterInterface(t)
 		writerMock.On(
 			"WriteMessages",
 			matchContext,
@@ -238,7 +307,7 @@ func TestImportCreatedLesson(t *testing.T) {
 		fileStorageMock := fileStorage.NewMockInterface(t)
 		fileStorageMock.On("Get").Once().Return(strconv.Itoa(lastLessonId), nil)
 
-		writerMock := mocks.NewWriterInterface(t)
+		writerMock := eventsMocks.NewWriterInterface(t)
 
 		createdLessonsImporter := &CreatedLessonsImporter{
 			out:     &out,
