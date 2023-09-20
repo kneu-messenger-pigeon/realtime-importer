@@ -53,6 +53,8 @@ github.com/kneu-messenger-pigeon/dekanat-events v0.1.2 h1:fqWPIB8/RUN54/RJxpkmsS
 github.com/kneu-messenger-pigeon/dekanat-events v0.1.2/go.mod h1:KC0hflA3057dtpg2Mtpbhma9Z3n8Y43vwyygZODzO/Y=
 github.com/kneu-messenger-pigeon/dekanat-events v0.1.3 h1:RqsPXCrBjkONEaYPPTo5W3q9FULSjRi6qNUDnoBYI54=
 github.com/kneu-messenger-pigeon/dekanat-events v0.1.3/go.mod h1:KC0hflA3057dtpg2Mtpbhma9Z3n8Y43vwyygZODzO/Y=
+github.com/kneu-messenger-pigeon/dekanat-events v0.1.5 h1:nmNFE/zaZtFkeLrlXrxBk1kQrZ8/pe00c228uWeERsQ=
+github.com/kneu-messenger-pigeon/dekanat-events v0.1.5/go.mod h1:KC0hflA3057dtpg2Mtpbhma9Z3n8Y43vwyygZODzO/Y=
 github.com/kneu-messenger-pigeon/events v0.1.40 h1:Ov5Ny7h5KGmxMFT5k6UPikun+LeQEymdIe3aATuzcRo=
 github.com/kneu-messenger-pigeon/events v0.1.40/go.mod h1:Q6X8B9gKZpKbby9gisLumvGT1xCWBM7bAFnviYi6MBQ=
 github.com/kneu-messenger-pigeon/fileStorage v1.0.1 h1:9ncIZaUXDv5SwB5KtWae/CSYYye1m/z4R7hU1WmBnWQ=
