@@ -100,9 +100,9 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		var confirmed dekanatEvents.LessonEditEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
-		go editedLessonsImporter.execute(ctx)
-		editedLessonsImporter.addEvent(lessonEditedEvent)
-		confirmed = <-editedLessonsImporter.getConfirmed()
+		go editedLessonsImporter.Execute(ctx)
+		editedLessonsImporter.AddEvent(lessonEditedEvent)
+		confirmed = <-editedLessonsImporter.GetConfirmed()
 		time.Sleep(defaultPollInterval)
 		cancel()
 		time.Sleep(time.Millisecond * 100)
@@ -173,11 +173,11 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
 		go func() {
-			confirmed = <-editedLessonsImporter.getConfirmed()
+			confirmed = <-editedLessonsImporter.GetConfirmed()
 			cancel()
 		}()
-		editedLessonsImporter.addEvent(lessonEditedEvent)
-		go editedLessonsImporter.execute(ctx)
+		editedLessonsImporter.AddEvent(lessonEditedEvent)
+		go editedLessonsImporter.Execute(ctx)
 		time.Sleep(time.Nanosecond * 30)
 		time.Sleep(time.Nanosecond * 30)
 
@@ -252,13 +252,13 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 
 		var confirmed dekanatEvents.LessonEditEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
-		editedLessonsImporter.addEvent(lessonEditedEvent)
+		editedLessonsImporter.AddEvent(lessonEditedEvent)
 
 		go func() {
-			confirmed = <-editedLessonsImporter.getConfirmed()
+			confirmed = <-editedLessonsImporter.GetConfirmed()
 			cancel()
 		}()
-		go editedLessonsImporter.execute(ctx)
+		go editedLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, dekanatEvents.LessonEditEvent{}, confirmed, "Expect that event will be confirmed")
@@ -294,15 +294,15 @@ func TestImportEditedLesson(t *testing.T) {
 
 		var confirmed dekanatEvents.LessonEditEvent
 
-		editedLessonsImporter.addEvent(dekanatEvents.LessonEditEvent{})
+		editedLessonsImporter.AddEvent(dekanatEvents.LessonEditEvent{})
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 
 		go func() {
-			confirmed = <-editedLessonsImporter.getConfirmed()
+			confirmed = <-editedLessonsImporter.GetConfirmed()
 			cancel()
 		}()
-		go editedLessonsImporter.execute(ctx)
+		go editedLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, dekanatEvents.LessonEditEvent{}, confirmed, "Expect that event will be confirmed")

@@ -5,48 +5,49 @@ import (
 	"context"
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/stretchr/testify/mock"
+	"realtime-importer/mocks"
 	"syscall"
 	"testing"
 	"time"
 )
 
 func TestEventLoopExecute(t *testing.T) {
-	t.Run("EventLoop execute", func(t *testing.T) {
+	t.Run("EventLoop Execute", func(t *testing.T) {
 		out := &bytes.Buffer{}
 
 		matchContext := mock.MatchedBy(func(ctx context.Context) bool { return true })
 
-		editedLessonsImporter := NewMockEditedLessonsImporterInterface(t)
-		createdLessonsImporter := NewMockCreatedLessonsImporterInterface(t)
-		updatedScoresImporter := NewMockUpdatedScoresImporterInterface(t)
-		deletedScoresImporter := NewMockDeletedScoresImporterInterface(t)
+		editedLessonsImporter := mocks.NewEditedLessonsImporterInterface(t)
+		createdLessonsImporter := mocks.NewCreatedLessonsImporterInterface(t)
+		updatedScoresImporter := mocks.NewUpdatedScoresImporterInterface(t)
+		deletedScoresImporter := mocks.NewDeletedScoresImporterInterface(t)
 
-		deleter := NewMockEventDeleterInterface(t)
-		fetcher := NewMockEventFetcherInterface(t)
+		deleter := mocks.NewEventDeleterInterface(t)
+		fetcher := mocks.NewEventFetcherInterface(t)
 
-		currentYearWatcher := NewMockCurrentYearWatcherInterface(t)
+		currentYearWatcher := mocks.NewCurrentYearWatcherInterface(t)
 
 		confirmedCalled := make(chan bool)
 
-		editedLessonsImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonEditEvent {
+		editedLessonsImporter.On("GetConfirmed").Return(func() <-chan dekanatEvents.LessonEditEvent {
 			confirmedCalled <- true
 			return make(chan dekanatEvents.LessonEditEvent)
 		}).Once()
-		createdLessonsImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonCreateEvent {
+		createdLessonsImporter.On("GetConfirmed").Return(func() <-chan dekanatEvents.LessonCreateEvent {
 			confirmedCalled <- true
 			return make(chan dekanatEvents.LessonCreateEvent)
 		}).Once()
-		updatedScoresImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.ScoreEditEvent {
+		updatedScoresImporter.On("GetConfirmed").Return(func() <-chan dekanatEvents.ScoreEditEvent {
 			confirmedCalled <- true
 			return make(chan dekanatEvents.ScoreEditEvent)
 		}).Once()
-		deletedScoresImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonDeletedEvent {
+		deletedScoresImporter.On("GetConfirmed").Return(func() <-chan dekanatEvents.LessonDeletedEvent {
 			confirmedCalled <- true
 			return make(chan dekanatEvents.LessonDeletedEvent)
 		}).Once()
 
 		fetcher.On("Fetch", matchContext).Return(func(ctx context.Context) interface{} {
-			// wait for call all  `getConfirmed`and then send POSIX-signal to stop eventloop
+			// wait for call all  `GetConfirmed`and then send POSIX-signal to stop eventloop
 			expectedConfirmedCallCount := 4
 			for expectedConfirmedCallCount > 0 {
 				select {
@@ -61,13 +62,13 @@ func TestEventLoopExecute(t *testing.T) {
 			return nil
 		})
 
-		editedLessonsImporter.On("execute", matchContext).Once().Return()
-		createdLessonsImporter.On("execute", matchContext).Once().Return()
-		updatedScoresImporter.On("execute", matchContext).Once().Return()
-		deletedScoresImporter.On("execute", matchContext).Once().Return()
+		editedLessonsImporter.On("Execute", matchContext).Once().Return()
+		createdLessonsImporter.On("Execute", matchContext).Once().Return()
+		updatedScoresImporter.On("Execute", matchContext).Once().Return()
+		deletedScoresImporter.On("Execute", matchContext).Once().Return()
 
-		deleter.On("execute", matchContext).Once().Return()
-		currentYearWatcher.On("execute", matchContext).Once().Return()
+		deleter.On("Execute", matchContext).Once().Return()
+		currentYearWatcher.On("Execute", matchContext).Once().Return()
 
 		eventLoop := EventLoop{
 			out:                    out,
@@ -110,25 +111,25 @@ func TestEventDispatchIncomingEvent(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 		defer cancel()
 
-		editedLessonsImporter := NewMockEditedLessonsImporterInterface(t)
-		createdLessonsImporter := NewMockCreatedLessonsImporterInterface(t)
-		updatedScoresImporter := NewMockUpdatedScoresImporterInterface(t)
-		deletedScoresImporter := NewMockDeletedScoresImporterInterface(t)
+		editedLessonsImporter := mocks.NewEditedLessonsImporterInterface(t)
+		createdLessonsImporter := mocks.NewCreatedLessonsImporterInterface(t)
+		updatedScoresImporter := mocks.NewUpdatedScoresImporterInterface(t)
+		deletedScoresImporter := mocks.NewDeletedScoresImporterInterface(t)
 
-		deleter := NewMockEventDeleterInterface(t)
-		fetcher := NewMockEventFetcherInterface(t)
+		deleter := mocks.NewEventDeleterInterface(t)
+		fetcher := mocks.NewEventFetcherInterface(t)
 
 		scoreEditEvent := dekanatEvents.ScoreEditEvent{}
 		lessonCreateEvent := dekanatEvents.LessonCreateEvent{}
 		lessonEditEvent := dekanatEvents.LessonEditEvent{}
 		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{}
 
-		updatedScoresImporter.On("addEvent", scoreEditEvent).Once().Return()
-		createdLessonsImporter.On("addEvent", lessonCreateEvent).Once().Return()
-		deletedScoresImporter.On("addEvent", lessonDeletedEvent).Once().Return()
-		editedLessonsImporter.On("addEvent", lessonEditEvent).Once().Return()
+		updatedScoresImporter.On("AddEvent", scoreEditEvent).Once().Return()
+		createdLessonsImporter.On("AddEvent", lessonCreateEvent).Once().Return()
+		deletedScoresImporter.On("AddEvent", lessonDeletedEvent).Once().Return()
+		editedLessonsImporter.On("AddEvent", lessonEditEvent).Once().Return()
 		// extra call based on dekanatEvents.LessonDeletedEvent
-		editedLessonsImporter.On("addEvent", dekanatEvents.LessonEditEvent{
+		editedLessonsImporter.On("AddEvent", dekanatEvents.LessonEditEvent{
 			CommonEventData: lessonDeletedEvent.CommonEventData,
 			IsDeleted:       true,
 		}).Once().Return()
@@ -168,13 +169,13 @@ func TestEventLoopDispatchConfirmedEvent(t *testing.T) {
 	t.Run("EventLoop dispatchConfirmedEvent", func(t *testing.T) {
 		out := &bytes.Buffer{}
 
-		editedLessonsImporter := NewMockEditedLessonsImporterInterface(t)
-		createdLessonsImporter := NewMockCreatedLessonsImporterInterface(t)
-		updatedScoresImporter := NewMockUpdatedScoresImporterInterface(t)
-		deletedScoresImporter := NewMockDeletedScoresImporterInterface(t)
+		editedLessonsImporter := mocks.NewEditedLessonsImporterInterface(t)
+		createdLessonsImporter := mocks.NewCreatedLessonsImporterInterface(t)
+		updatedScoresImporter := mocks.NewUpdatedScoresImporterInterface(t)
+		deletedScoresImporter := mocks.NewDeletedScoresImporterInterface(t)
 
-		deleter := NewMockEventDeleterInterface(t)
-		fetcher := NewMockEventFetcherInterface(t)
+		deleter := mocks.NewEventDeleterInterface(t)
+		fetcher := mocks.NewEventFetcherInterface(t)
 
 		scoreEditEvent := dekanatEvents.ScoreEditEvent{}
 		lessonCreateEvent := dekanatEvents.LessonCreateEvent{}
@@ -186,16 +187,16 @@ func TestEventLoopDispatchConfirmedEvent(t *testing.T) {
 		lessonDeletedEventConfirmed := make(chan dekanatEvents.LessonDeletedEvent)
 		scoreEditEventConfirmed := make(chan dekanatEvents.ScoreEditEvent)
 
-		editedLessonsImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonEditEvent {
+		editedLessonsImporter.On("GetConfirmed").Return(func() <-chan dekanatEvents.LessonEditEvent {
 			return lessonEditEventConfirmed
 		})
-		createdLessonsImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonCreateEvent {
+		createdLessonsImporter.On("GetConfirmed").Return(func() <-chan dekanatEvents.LessonCreateEvent {
 			return lessonCreateEventConfirmed
 		})
-		updatedScoresImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.ScoreEditEvent {
+		updatedScoresImporter.On("GetConfirmed").Return(func() <-chan dekanatEvents.ScoreEditEvent {
 			return scoreEditEventConfirmed
 		})
-		deletedScoresImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonDeletedEvent {
+		deletedScoresImporter.On("GetConfirmed").Return(func() <-chan dekanatEvents.LessonDeletedEvent {
 			return lessonDeletedEventConfirmed
 		})
 

@@ -13,12 +13,12 @@ import (
 )
 
 type CurrentYearGetterInterface interface {
-	getYear() int
+	GetYear() int
 }
 
 type CurrentYearWatcherInterface interface {
 	CurrentYearGetterInterface
-	execute(context.Context)
+	Execute(context.Context)
 }
 
 type CurrentYearWatcher struct {
@@ -28,7 +28,7 @@ type CurrentYearWatcher struct {
 	year    int
 }
 
-func (watcher *CurrentYearWatcher) execute(ctx context.Context) {
+func (watcher *CurrentYearWatcher) Execute(ctx context.Context) {
 	yearString, err := watcher.storage.Get()
 	if err == nil && yearString != "" {
 		watcher.year, err = strconv.Atoi(yearString)
@@ -58,6 +58,6 @@ func (watcher *CurrentYearWatcher) execute(ctx context.Context) {
 	}
 }
 
-func (watcher *CurrentYearWatcher) getYear() int {
+func (watcher *CurrentYearWatcher) GetYear() int {
 	return watcher.year
 }

@@ -120,14 +120,14 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 
 		go func() {
-			confirmed = <-createdLessonsImporter.getConfirmed()
+			confirmed = <-createdLessonsImporter.GetConfirmed()
 			time.Sleep(defaultForcePollInterval)
 			cancel()
 			runtime.Gosched()
 		}()
 
-		createdLessonsImporter.addEvent(lessonCreatedEvent)
-		go createdLessonsImporter.execute(ctx)
+		createdLessonsImporter.AddEvent(lessonCreatedEvent)
+		go createdLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, lessonCreatedEvent, confirmed, "Expect that event will be confirmed")
@@ -193,7 +193,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 		defer cancel()
 
-		go createdLessonsImporter.execute(ctx)
+		go createdLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		err := dbMock.ExpectationsWereMet()
@@ -271,13 +271,13 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 
 		var confirmed dekanatEvents.LessonCreateEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
-		createdLessonsImporter.addEvent(lessonCreatedEvent)
+		createdLessonsImporter.AddEvent(lessonCreatedEvent)
 
 		go func() {
-			confirmed = <-createdLessonsImporter.getConfirmed()
+			confirmed = <-createdLessonsImporter.GetConfirmed()
 			cancel()
 		}()
-		go createdLessonsImporter.execute(ctx)
+		go createdLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, dekanatEvents.LessonCreateEvent{}, confirmed, "Expect that event will be confirmed")
@@ -322,12 +322,12 @@ func TestImportCreatedLesson(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 
 		go func() {
-			confirmed = <-createdLessonsImporter.getConfirmed()
+			confirmed = <-createdLessonsImporter.GetConfirmed()
 			time.Sleep(defaultPollInterval)
 			cancel()
 			runtime.Gosched()
 		}()
-		go createdLessonsImporter.execute(ctx)
+		go createdLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, dekanatEvents.LessonCreateEvent{}, confirmed, "Expect that event will be confirmed")

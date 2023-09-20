@@ -20,9 +20,9 @@ const LessonsCreatedQuery = LessonsSelect + ` WHERE ID > ? ORDER BY ID ASC`
 const LessonDefaultLastIdQuery = `SELECT FIRST 1 ID FROM T_PRJURN WHERE REGDATE < ? ORDER BY ID DESC`
 
 type CreatedLessonsImporterInterface interface {
-	execute(context context.Context)
-	addEvent(event dekanatEvents.LessonCreateEvent)
-	getConfirmed() <-chan dekanatEvents.LessonCreateEvent
+	Execute(context context.Context)
+	AddEvent(event dekanatEvents.LessonCreateEvent)
+	GetConfirmed() <-chan dekanatEvents.LessonCreateEvent
 }
 
 type CreatedLessonsImporter struct {
@@ -40,7 +40,7 @@ type CreatedLessonsImporter struct {
 	editScoresMaxLessonId MaxLessonIdGetterInterface
 }
 
-func (importer *CreatedLessonsImporter) execute(context context.Context) {
+func (importer *CreatedLessonsImporter) Execute(context context.Context) {
 	importer.initConfirmed()
 
 	var err error
@@ -71,7 +71,7 @@ func (importer *CreatedLessonsImporter) execute(context context.Context) {
 	}
 }
 
-func (importer *CreatedLessonsImporter) addEvent(event dekanatEvents.LessonCreateEvent) {
+func (importer *CreatedLessonsImporter) AddEvent(event dekanatEvents.LessonCreateEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
@@ -84,7 +84,7 @@ func (importer *CreatedLessonsImporter) addEvent(event dekanatEvents.LessonCreat
 	}
 }
 
-func (importer *CreatedLessonsImporter) getConfirmed() <-chan dekanatEvents.LessonCreateEvent {
+func (importer *CreatedLessonsImporter) GetConfirmed() <-chan dekanatEvents.LessonCreateEvent {
 	importer.initConfirmed()
 	return importer.confirmed
 }
@@ -138,7 +138,7 @@ func (importer *CreatedLessonsImporter) pullCreatedLessons() error {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching new lesson: %s \n", t(), err)
 			continue
 		}
-		event.Year = importer.currentYear.getYear()
+		event.Year = importer.currentYear.GetYear()
 		newLastId = event.Id
 		payload, _ := json.Marshal(event)
 		messages = append(messages, kafka.Message{

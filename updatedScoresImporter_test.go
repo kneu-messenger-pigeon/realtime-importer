@@ -123,13 +123,13 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		var confirmed dekanatEvents.ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
-		updatedLessonsImporter.addEvent(updatedScoreEvent)
+		updatedLessonsImporter.AddEvent(updatedScoreEvent)
 		maxLessonIdSetter.AssertCalled(t, "Set", expectedEvent.LessonId)
 
-		go updatedLessonsImporter.execute(ctx)
+		go updatedLessonsImporter.Execute(ctx)
 		time.Sleep(time.Nanosecond * 200)
 		go func() {
-			confirmed = <-updatedLessonsImporter.getConfirmed()
+			confirmed = <-updatedLessonsImporter.GetConfirmed()
 			time.Sleep(defaultForcePollInterval)
 			cancel()
 			runtime.Gosched()
@@ -194,18 +194,18 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			maxLessonId: maxLessonIdSetter,
 		}
 
-		updatedLessonsImporter.addEvent(updateScoreEvent)
+		updatedLessonsImporter.AddEvent(updateScoreEvent)
 		maxLessonIdSetter.AssertCalled(t, "Set", expectedEvent.LessonId)
 
 		var confirmed dekanatEvents.ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
 		go func() {
-			confirmed = <-updatedLessonsImporter.getConfirmed()
+			confirmed = <-updatedLessonsImporter.GetConfirmed()
 			cancel()
 		}()
 
-		go updatedLessonsImporter.execute(ctx)
+		go updatedLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, dekanatEvents.ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
@@ -290,17 +290,17 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			maxLessonId: maxLessonIdSetter,
 		}
 
-		updatedLessonsImporter.addEvent(updateScoreEvent)
+		updatedLessonsImporter.AddEvent(updateScoreEvent)
 
 		var confirmed dekanatEvents.ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-updatedLessonsImporter.getConfirmed()
+			confirmed = <-updatedLessonsImporter.GetConfirmed()
 			cancel()
 		}()
 
-		go updatedLessonsImporter.execute(ctx)
+		go updatedLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, dekanatEvents.ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
@@ -367,17 +367,17 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 			maxLessonId: maxLessonIdSetter,
 		}
 
-		updatedLessonsImporter.addEvent(updateScoreEvent)
+		updatedLessonsImporter.AddEvent(updateScoreEvent)
 
 		var confirmed dekanatEvents.ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-updatedLessonsImporter.getConfirmed()
+			confirmed = <-updatedLessonsImporter.GetConfirmed()
 			cancel()
 		}()
 
-		go updatedLessonsImporter.execute(ctx)
+		go updatedLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, dekanatEvents.ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")

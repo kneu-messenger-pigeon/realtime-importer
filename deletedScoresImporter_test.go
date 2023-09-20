@@ -102,14 +102,14 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		var confirmed dekanatEvents.LessonDeletedEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
 		go func() {
-			confirmed = <-deletedLessonsImporter.getConfirmed()
+			confirmed = <-deletedLessonsImporter.GetConfirmed()
 			time.Sleep(defaultPollInterval)
 			cancel()
 			runtime.Gosched()
 		}()
-		deletedLessonsImporter.addEvent(lessonDeletedEvent)
+		deletedLessonsImporter.AddEvent(lessonDeletedEvent)
 		time.Sleep(time.Nanosecond * 100)
-		go deletedLessonsImporter.execute(ctx)
+		go deletedLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, lessonDeletedEvent, confirmed, "Expect that event will be confirmed")
@@ -174,17 +174,17 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
-		deletedLessonsImporter.addEvent(lessonDeletedEvent)
+		deletedLessonsImporter.AddEvent(lessonDeletedEvent)
 
 		var confirmed dekanatEvents.LessonDeletedEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-deletedLessonsImporter.getConfirmed()
+			confirmed = <-deletedLessonsImporter.GetConfirmed()
 			cancel()
 		}()
 
-		go deletedLessonsImporter.execute(ctx)
+		go deletedLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, dekanatEvents.LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
@@ -256,17 +256,17 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
-		deletedLessonsImporter.addEvent(lessonDeletedEvent)
+		deletedLessonsImporter.AddEvent(lessonDeletedEvent)
 
 		var confirmed dekanatEvents.LessonDeletedEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-deletedLessonsImporter.getConfirmed()
+			confirmed = <-deletedLessonsImporter.GetConfirmed()
 			cancel()
 		}()
 
-		go deletedLessonsImporter.execute(ctx)
+		go deletedLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, dekanatEvents.LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
@@ -311,17 +311,17 @@ func TestImportDeletedScoresLesson(t *testing.T) {
 			writer: writerMock,
 		}
 
-		deletedLessonsImporter.addEvent(lessonDeletedEvent)
+		deletedLessonsImporter.AddEvent(lessonDeletedEvent)
 
 		var confirmed dekanatEvents.LessonDeletedEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
-			confirmed = <-deletedLessonsImporter.getConfirmed()
+			confirmed = <-deletedLessonsImporter.GetConfirmed()
 			cancel()
 		}()
 
-		go deletedLessonsImporter.execute(ctx)
+		go deletedLessonsImporter.Execute(ctx)
 		<-ctx.Done()
 
 		assert.Equalf(t, dekanatEvents.LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")

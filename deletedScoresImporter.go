@@ -17,9 +17,9 @@ import (
 const DeletedScoreQuery = ScoreSelect + ` WHERE XI_2 IN (?) ` + ScoreSelectOrderBy
 
 type DeletedScoresImporterInterface interface {
-	execute(context context.Context)
-	addEvent(event dekanatEvents.LessonDeletedEvent)
-	getConfirmed() <-chan dekanatEvents.LessonDeletedEvent
+	Execute(context context.Context)
+	AddEvent(event dekanatEvents.LessonDeletedEvent)
+	GetConfirmed() <-chan dekanatEvents.LessonDeletedEvent
 }
 
 type DeletedScoresImporter struct {
@@ -33,7 +33,7 @@ type DeletedScoresImporter struct {
 	confirmed       chan dekanatEvents.LessonDeletedEvent
 }
 
-func (importer *DeletedScoresImporter) execute(context context.Context) {
+func (importer *DeletedScoresImporter) Execute(context context.Context) {
 	importer.initConfirmed()
 
 	var err error
@@ -56,7 +56,7 @@ func (importer *DeletedScoresImporter) execute(context context.Context) {
 	}
 }
 
-func (importer *DeletedScoresImporter) addEvent(event dekanatEvents.LessonDeletedEvent) {
+func (importer *DeletedScoresImporter) AddEvent(event dekanatEvents.LessonDeletedEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
@@ -64,7 +64,7 @@ func (importer *DeletedScoresImporter) addEvent(event dekanatEvents.LessonDelete
 	}
 }
 
-func (importer *DeletedScoresImporter) getConfirmed() <-chan dekanatEvents.LessonDeletedEvent {
+func (importer *DeletedScoresImporter) GetConfirmed() <-chan dekanatEvents.LessonDeletedEvent {
 	importer.initConfirmed()
 
 	return importer.confirmed
@@ -132,7 +132,7 @@ func (importer *DeletedScoresImporter) pullDeletedScores() error {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching score: %s \n", t(), err)
 			continue
 		}
-		event.Year = importer.currentYear.getYear()
+		event.Year = importer.currentYear.GetYear()
 		payload, _ := json.Marshal(event)
 		messages = append(messages, kafka.Message{
 			Key:   []byte(events.ScoreEventName),

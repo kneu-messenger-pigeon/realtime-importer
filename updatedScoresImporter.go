@@ -19,9 +19,9 @@ const StorageTimeFormat = time.RFC3339
 const UpdateScoreQuery = ScoreSelect + ` WHERE REGDATE > ? ` + ScoreSelectOrderBy
 
 type UpdatedScoresImporterInterface interface {
-	execute(context context.Context)
-	addEvent(event dekanatEvents.ScoreEditEvent)
-	getConfirmed() <-chan dekanatEvents.ScoreEditEvent
+	Execute(context context.Context)
+	AddEvent(event dekanatEvents.ScoreEditEvent)
+	GetConfirmed() <-chan dekanatEvents.ScoreEditEvent
 }
 
 type UpdatedScoresImporter struct {
@@ -38,7 +38,7 @@ type UpdatedScoresImporter struct {
 	maxLessonId     MaxLessonIdSetterInterface
 }
 
-func (importer *UpdatedScoresImporter) execute(context context.Context) {
+func (importer *UpdatedScoresImporter) Execute(context context.Context) {
 	importer.initConfirmed()
 
 	var err error
@@ -68,7 +68,7 @@ func (importer *UpdatedScoresImporter) execute(context context.Context) {
 	}
 }
 
-func (importer *UpdatedScoresImporter) addEvent(event dekanatEvents.ScoreEditEvent) {
+func (importer *UpdatedScoresImporter) AddEvent(event dekanatEvents.ScoreEditEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
@@ -78,7 +78,7 @@ func (importer *UpdatedScoresImporter) addEvent(event dekanatEvents.ScoreEditEve
 	}
 }
 
-func (importer *UpdatedScoresImporter) getConfirmed() <-chan dekanatEvents.ScoreEditEvent {
+func (importer *UpdatedScoresImporter) GetConfirmed() <-chan dekanatEvents.ScoreEditEvent {
 	importer.initConfirmed()
 	return importer.confirmed
 }
@@ -131,7 +131,7 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 		if err != nil {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching score: %s \n", t(), err)
 		} else {
-			event.Year = importer.currentYear.getYear()
+			event.Year = importer.currentYear.GetYear()
 			nextLastRegDate = event.UpdatedAt
 			payload, _ := json.Marshal(event)
 			messages = append(messages, kafka.Message{

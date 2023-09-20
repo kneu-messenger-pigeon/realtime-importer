@@ -17,9 +17,9 @@ import (
 const LessonsEditedQuery = LessonsSelect + ` WHERE ID IN (?) ORDER BY ID ASC`
 
 type EditedLessonsImporterInterface interface {
-	execute(context context.Context)
-	addEvent(event dekanatEvents.LessonEditEvent)
-	getConfirmed() <-chan dekanatEvents.LessonEditEvent
+	Execute(context context.Context)
+	AddEvent(event dekanatEvents.LessonEditEvent)
+	GetConfirmed() <-chan dekanatEvents.LessonEditEvent
 }
 
 type EditedLessonsImporter struct {
@@ -33,7 +33,7 @@ type EditedLessonsImporter struct {
 	confirmed       chan dekanatEvents.LessonEditEvent
 }
 
-func (importer *EditedLessonsImporter) execute(context context.Context) {
+func (importer *EditedLessonsImporter) Execute(context context.Context) {
 	if importer.confirmed == nil {
 		importer.confirmed = make(chan dekanatEvents.LessonEditEvent)
 	}
@@ -60,7 +60,7 @@ func (importer *EditedLessonsImporter) execute(context context.Context) {
 	}
 }
 
-func (importer *EditedLessonsImporter) addEvent(event dekanatEvents.LessonEditEvent) {
+func (importer *EditedLessonsImporter) AddEvent(event dekanatEvents.LessonEditEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
@@ -73,7 +73,7 @@ func (importer *EditedLessonsImporter) addEvent(event dekanatEvents.LessonEditEv
 	}
 }
 
-func (importer *EditedLessonsImporter) getConfirmed() <-chan dekanatEvents.LessonEditEvent {
+func (importer *EditedLessonsImporter) GetConfirmed() <-chan dekanatEvents.LessonEditEvent {
 	if importer.confirmed == nil {
 		importer.confirmed = make(chan dekanatEvents.LessonEditEvent)
 	}
@@ -130,7 +130,7 @@ func (importer *EditedLessonsImporter) pullEditedLessons() error {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching new lesson: %s \n", t(), err)
 			continue
 		}
-		event.Year = importer.currentYear.getYear()
+		event.Year = importer.currentYear.GetYear()
 		payload, _ := json.Marshal(event)
 		messages = append(messages, kafka.Message{
 			Key:   []byte(events.LessonEventName),

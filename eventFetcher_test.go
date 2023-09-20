@@ -10,6 +10,7 @@ import (
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"realtime-importer/mocks"
 	"strings"
 	"testing"
 	"time"
@@ -85,7 +86,7 @@ func TestEventFetcher_Fetch(t *testing.T) {
 		out := &bytes.Buffer{}
 		expectedError := errors.New("expected error")
 
-		sqsClientMock := NewMockSqsApiClientInterface(t)
+		sqsClientMock := mocks.NewSqsApiClientInterface(t)
 
 		sqsClientMock.On(
 			"ReceiveMessage",
@@ -114,8 +115,8 @@ func fetchMessage(t *testing.T, messageJSON *string, expectDelete bool) interfac
 	var ctx context.Context
 	var cancel context.CancelFunc
 
-	sqsClientMock := NewMockSqsApiClientInterface(t)
-	deleterMock := NewMockEventDeleterInterface(t)
+	sqsClientMock := mocks.NewSqsApiClientInterface(t)
+	deleterMock := mocks.NewEventDeleterInterface(t)
 
 	receiptHandle := "ReceiptHandle"
 	sqsMessageOutput := &sqs.ReceiveMessageOutput{

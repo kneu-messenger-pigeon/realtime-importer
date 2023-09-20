@@ -32,9 +32,9 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		currentYearWatcher.execute(ctx)
+		currentYearWatcher.Execute(ctx)
 
-		actualYear := currentYearWatcher.getYear()
+		actualYear := currentYearWatcher.GetYear()
 
 		assert.GreaterOrEqual(t, actualYear, time.Now().Year()-1)
 		assert.LessOrEqual(t, actualYear, time.Now().Year())
@@ -84,9 +84,9 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 			time.Sleep(time.Millisecond * 50)
 			cancel()
 		}()
-		currentYearWatcher.execute(ctx)
+		currentYearWatcher.Execute(ctx)
 
-		actualYear := currentYearWatcher.getYear()
+		actualYear := currentYearWatcher.GetYear()
 		assert.Equal(t, expectedYear, actualYear)
 
 		stringOutput := out.String()
@@ -136,7 +136,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 			time.Sleep(time.Millisecond * 50)
 			cancel()
 		}()
-		currentYearWatcher.execute(ctx)
+		currentYearWatcher.Execute(ctx)
 
 		stringOutput := out.String()
 		assert.Contains(t, stringOutput, expectedError.Error())
@@ -185,9 +185,9 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 			time.Sleep(time.Millisecond * 50)
 			cancel()
 		}()
-		currentYearWatcher.execute(ctx)
+		currentYearWatcher.Execute(ctx)
 
-		actualYear := currentYearWatcher.getYear()
+		actualYear := currentYearWatcher.GetYear()
 		assert.Equal(t, expectedYear, actualYear)
 
 		stringOutput := out.String()

@@ -24,12 +24,12 @@ func (eventLoop *EventLoop) execute() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
-	go eventLoop.deleter.execute(ctx)
-	go eventLoop.currentYearWatcher.execute(ctx)
-	go eventLoop.createdLessonsImporter.execute(ctx)
-	go eventLoop.editedLessonsImporter.execute(ctx)
-	go eventLoop.updatedScoresImporter.execute(ctx)
-	go eventLoop.deletedScoresImporter.execute(ctx)
+	go eventLoop.deleter.Execute(ctx)
+	go eventLoop.currentYearWatcher.Execute(ctx)
+	go eventLoop.createdLessonsImporter.Execute(ctx)
+	go eventLoop.editedLessonsImporter.Execute(ctx)
+	go eventLoop.updatedScoresImporter.Execute(ctx)
+	go eventLoop.deletedScoresImporter.Execute(ctx)
 
 	go eventLoop.dispatchConfirmedEvent(ctx)
 	eventLoop.dispatchIncomingEvent(ctx)
@@ -47,24 +47,24 @@ func (eventLoop *EventLoop) dispatchIncomingEvent(ctx context.Context) {
 
 		switch event.(type) {
 		case dekanatEvents.ScoreEditEvent:
-			eventLoop.updatedScoresImporter.addEvent(event.(dekanatEvents.ScoreEditEvent))
+			eventLoop.updatedScoresImporter.AddEvent(event.(dekanatEvents.ScoreEditEvent))
 
 		case dekanatEvents.LessonCreateEvent:
-			eventLoop.createdLessonsImporter.addEvent(event.(dekanatEvents.LessonCreateEvent))
+			eventLoop.createdLessonsImporter.AddEvent(event.(dekanatEvents.LessonCreateEvent))
 
 		case dekanatEvents.LessonEditEvent:
-			eventLoop.editedLessonsImporter.addEvent(event.(dekanatEvents.LessonEditEvent))
+			eventLoop.editedLessonsImporter.AddEvent(event.(dekanatEvents.LessonEditEvent))
 
 		case dekanatEvents.LessonDeletedEvent:
 			lessonDeletedEvent = event.(dekanatEvents.LessonDeletedEvent)
-			eventLoop.deletedScoresImporter.addEvent(lessonDeletedEvent)
+			eventLoop.deletedScoresImporter.AddEvent(lessonDeletedEvent)
 
 			lessonEditEvent = dekanatEvents.LessonEditEvent{
 				CommonEventData: lessonDeletedEvent.CommonEventData,
 				IsDeleted:       true,
 			}
 			lessonEditEvent.ReceiptHandle = nil
-			eventLoop.editedLessonsImporter.addEvent(lessonEditEvent)
+			eventLoop.editedLessonsImporter.AddEvent(lessonEditEvent)
 		}
 	}
 }
@@ -73,10 +73,10 @@ func (eventLoop *EventLoop) dispatchConfirmedEvent(ctx context.Context) {
 	var event interface{}
 	for {
 		select {
-		case event = <-eventLoop.createdLessonsImporter.getConfirmed():
-		case event = <-eventLoop.updatedScoresImporter.getConfirmed():
-		case event = <-eventLoop.editedLessonsImporter.getConfirmed():
-		case event = <-eventLoop.deletedScoresImporter.getConfirmed():
+		case event = <-eventLoop.createdLessonsImporter.GetConfirmed():
+		case event = <-eventLoop.updatedScoresImporter.GetConfirmed():
+		case event = <-eventLoop.editedLessonsImporter.GetConfirmed():
+		case event = <-eventLoop.deletedScoresImporter.GetConfirmed():
 		case <-ctx.Done():
 			return
 		}

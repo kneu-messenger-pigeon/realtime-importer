@@ -9,7 +9,7 @@ import (
 )
 
 type EventDeleterInterface interface {
-	execute(ctx context.Context)
+	Execute(ctx context.Context)
 	Delete(event any)
 }
 
@@ -20,7 +20,7 @@ type EventDeleter struct {
 	queue       chan *string
 }
 
-func (deleter *EventDeleter) execute(ctx context.Context) {
+func (deleter *EventDeleter) Execute(ctx context.Context) {
 	deleter.queue = make(chan *string)
 	var receiptHandle *string
 

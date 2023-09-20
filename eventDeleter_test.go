@@ -9,6 +9,7 @@ import (
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"realtime-importer/mocks"
 	"testing"
 	"time"
 )
@@ -51,7 +52,7 @@ func TestEventDeleter(t *testing.T) {
 
 	for _, event := range toDeleteEvents {
 		t.Run(fmt.Sprintf("Delete %T", event), func(t *testing.T) {
-			sqsClientMock := NewMockSqsApiClientInterface(t)
+			sqsClientMock := mocks.NewSqsApiClientInterface(t)
 			deleter := EventDeleter{
 				out:         &out,
 				sqsQueueUrl: &sqsQueueUrl,
@@ -67,7 +68,7 @@ func TestEventDeleter(t *testing.T) {
 	}
 
 	t.Run("Wrong input for deleter", func(t *testing.T) {
-		sqsClientMock := NewMockSqsApiClientInterface(t)
+		sqsClientMock := mocks.NewSqsApiClientInterface(t)
 		deleter := EventDeleter{
 			out:         &out,
 			sqsQueueUrl: &sqsQueueUrl,
@@ -84,7 +85,7 @@ func TestEventDeleter(t *testing.T) {
 		out.Reset()
 		expectedError := errors.New("expected error")
 
-		sqsClientMock := NewMockSqsApiClientInterface(t)
+		sqsClientMock := mocks.NewSqsApiClientInterface(t)
 		deleter := EventDeleter{
 			out:         &out,
 			sqsQueueUrl: &sqsQueueUrl,
@@ -105,7 +106,7 @@ func callDelete(deleter EventDeleter, event interface{}) {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	ctx, cancel = context.WithCancel(context.Background())
-	go deleter.execute(ctx)
+	go deleter.Execute(ctx)
 	time.Sleep(time.Millisecond)
 	deleter.Delete(event)
 	time.Sleep(time.Millisecond)
