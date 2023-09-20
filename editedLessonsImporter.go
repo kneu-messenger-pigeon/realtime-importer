@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/VictoriaMetrics/fastcache"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/segmentio/kafka-go"
 	"io"
@@ -17,8 +18,8 @@ const LessonsEditedQuery = LessonsSelect + ` WHERE ID IN (?) ORDER BY ID ASC`
 
 type EditedLessonsImporterInterface interface {
 	execute(context context.Context)
-	addEvent(event LessonEditEvent)
-	getConfirmed() <-chan LessonEditEvent
+	addEvent(event dekanatEvents.LessonEditEvent)
+	getConfirmed() <-chan dekanatEvents.LessonEditEvent
 }
 
 type EditedLessonsImporter struct {
@@ -27,14 +28,14 @@ type EditedLessonsImporter struct {
 	cache           *fastcache.Cache
 	writer          events.WriterInterface
 	currentYear     CurrentYearGetterInterface
-	eventQueue      []LessonEditEvent
+	eventQueue      []dekanatEvents.LessonEditEvent
 	eventQueueMutex sync.Mutex
-	confirmed       chan LessonEditEvent
+	confirmed       chan dekanatEvents.LessonEditEvent
 }
 
 func (importer *EditedLessonsImporter) execute(context context.Context) {
 	if importer.confirmed == nil {
-		importer.confirmed = make(chan LessonEditEvent)
+		importer.confirmed = make(chan dekanatEvents.LessonEditEvent)
 	}
 
 	var err error
@@ -59,22 +60,22 @@ func (importer *EditedLessonsImporter) execute(context context.Context) {
 	}
 }
 
-func (importer *EditedLessonsImporter) addEvent(event LessonEditEvent) {
+func (importer *EditedLessonsImporter) addEvent(event dekanatEvents.LessonEditEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
 		importer.eventQueueMutex.Unlock()
 
 		fmt.Fprintf(
-			importer.out, "[%s] receive LessonEditEvent - discipline: %d; lesson: %d; added to processing queue \n",
+			importer.out, "[%s] receive dekanatEvents.LessonEditEvent - discipline: %d; lesson: %d; added to processing queue \n",
 			t(), event.GetDisciplineId(), event.GetLessonId(),
 		)
 	}
 }
 
-func (importer *EditedLessonsImporter) getConfirmed() <-chan LessonEditEvent {
+func (importer *EditedLessonsImporter) getConfirmed() <-chan dekanatEvents.LessonEditEvent {
 	if importer.confirmed == nil {
-		importer.confirmed = make(chan LessonEditEvent)
+		importer.confirmed = make(chan dekanatEvents.LessonEditEvent)
 	}
 
 	return importer.confirmed
@@ -91,7 +92,7 @@ func (importer *EditedLessonsImporter) determineConfirmedEvents() {
 	importer.eventQueueMutex.Unlock()
 }
 
-func (importer *EditedLessonsImporter) putIntoConfirmedIfSatisfy(event *LessonEditEvent) bool {
+func (importer *EditedLessonsImporter) putIntoConfirmedIfSatisfy(event *dekanatEvents.LessonEditEvent) bool {
 	cachedState, exist := importer.cache.HasGet([]byte{}, uintToBytes(event.GetLessonId()))
 
 	if exist && cachedState[0] == importer.makeLessonState(event.GetDate(), event.GetTypeId(), event.IsDeleted) {

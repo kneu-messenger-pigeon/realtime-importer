@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/VictoriaMetrics/fastcache"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/segmentio/kafka-go"
 	"io"
@@ -17,8 +18,8 @@ const DeletedScoreQuery = ScoreSelect + ` WHERE XI_2 IN (?) ` + ScoreSelectOrder
 
 type DeletedScoresImporterInterface interface {
 	execute(context context.Context)
-	addEvent(event LessonDeletedEvent)
-	getConfirmed() <-chan LessonDeletedEvent
+	addEvent(event dekanatEvents.LessonDeletedEvent)
+	getConfirmed() <-chan dekanatEvents.LessonDeletedEvent
 }
 
 type DeletedScoresImporter struct {
@@ -27,9 +28,9 @@ type DeletedScoresImporter struct {
 	cache           *fastcache.Cache
 	writer          events.WriterInterface
 	currentYear     CurrentYearGetterInterface
-	eventQueue      []LessonDeletedEvent
+	eventQueue      []dekanatEvents.LessonDeletedEvent
 	eventQueueMutex sync.Mutex
-	confirmed       chan LessonDeletedEvent
+	confirmed       chan dekanatEvents.LessonDeletedEvent
 }
 
 func (importer *DeletedScoresImporter) execute(context context.Context) {
@@ -55,7 +56,7 @@ func (importer *DeletedScoresImporter) execute(context context.Context) {
 	}
 }
 
-func (importer *DeletedScoresImporter) addEvent(event LessonDeletedEvent) {
+func (importer *DeletedScoresImporter) addEvent(event dekanatEvents.LessonDeletedEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
@@ -63,7 +64,7 @@ func (importer *DeletedScoresImporter) addEvent(event LessonDeletedEvent) {
 	}
 }
 
-func (importer *DeletedScoresImporter) getConfirmed() <-chan LessonDeletedEvent {
+func (importer *DeletedScoresImporter) getConfirmed() <-chan dekanatEvents.LessonDeletedEvent {
 	importer.initConfirmed()
 
 	return importer.confirmed
@@ -71,7 +72,7 @@ func (importer *DeletedScoresImporter) getConfirmed() <-chan LessonDeletedEvent 
 
 func (importer *DeletedScoresImporter) initConfirmed() {
 	if importer.confirmed == nil {
-		importer.confirmed = make(chan LessonDeletedEvent)
+		importer.confirmed = make(chan dekanatEvents.LessonDeletedEvent)
 	}
 }
 
@@ -86,7 +87,7 @@ func (importer *DeletedScoresImporter) determineConfirmedEvents() {
 	importer.eventQueueMutex.Unlock()
 }
 
-func (importer *DeletedScoresImporter) putIntoConfirmedIfSatisfy(event *LessonDeletedEvent) bool {
+func (importer *DeletedScoresImporter) putIntoConfirmedIfSatisfy(event *dekanatEvents.LessonDeletedEvent) bool {
 	isDeletedFlag, exist := importer.cache.HasGet([]byte{}, uintToBytes(event.GetLessonId()))
 
 	if exist && isDeletedFlag[0] == 1 {

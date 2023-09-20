@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	eventsMocks "github.com/kneu-messenger-pigeon/events/mocks"
 	"github.com/kneu-messenger-pigeon/fileStorage"
@@ -71,8 +72,8 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			SyncedAt: syncedAtRewrite,
 		}
 
-		updatedScoreEvent := ScoreEditEvent{
-			CommonEventData: CommonEventData{
+		updatedScoreEvent := dekanatEvents.ScoreEditEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
@@ -119,7 +120,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			maxLessonId: maxLessonIdSetter,
 		}
 
-		var confirmed ScoreEditEvent
+		var confirmed dekanatEvents.ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 		updatedLessonsImporter.addEvent(updatedScoreEvent)
@@ -156,8 +157,8 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			SyncedAt: syncedAtRewrite,
 		}
 
-		updateScoreEvent := ScoreEditEvent{
-			CommonEventData: CommonEventData{
+		updateScoreEvent := dekanatEvents.ScoreEditEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
@@ -196,7 +197,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		updatedLessonsImporter.addEvent(updateScoreEvent)
 		maxLessonIdSetter.AssertCalled(t, "Set", expectedEvent.LessonId)
 
-		var confirmed ScoreEditEvent
+		var confirmed dekanatEvents.ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
 		go func() {
@@ -207,7 +208,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		go updatedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
-		assert.Equalf(t, ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Equalf(t, dekanatEvents.ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
@@ -235,8 +236,8 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			UpdatedAt: syncedAtRewrite.Add(-time.Minute),
 		}
 
-		updateScoreEvent := ScoreEditEvent{
-			CommonEventData: CommonEventData{
+		updateScoreEvent := dekanatEvents.ScoreEditEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
@@ -291,7 +292,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 
 		updatedLessonsImporter.addEvent(updateScoreEvent)
 
-		var confirmed ScoreEditEvent
+		var confirmed dekanatEvents.ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
@@ -302,7 +303,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		go updatedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
-		assert.Equalf(t, ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Equalf(t, dekanatEvents.ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
@@ -336,8 +337,8 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 			},
 		}
 
-		updateScoreEvent := ScoreEditEvent{
-			CommonEventData: CommonEventData{
+		updateScoreEvent := dekanatEvents.ScoreEditEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
@@ -368,7 +369,7 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 
 		updatedLessonsImporter.addEvent(updateScoreEvent)
 
-		var confirmed ScoreEditEvent
+		var confirmed dekanatEvents.ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
@@ -379,7 +380,7 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 		go updatedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
-		assert.Equalf(t, ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Equalf(t, dekanatEvents.ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)

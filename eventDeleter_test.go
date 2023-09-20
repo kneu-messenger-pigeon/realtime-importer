@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -25,23 +26,23 @@ func TestEventDeleter(t *testing.T) {
 	matchContext := mock.MatchedBy(func(ctx context.Context) bool { return true })
 
 	toDeleteEvents := append(make([]interface{}, 0),
-		ScoreEditEvent{
-			CommonEventData: CommonEventData{
+		dekanatEvents.ScoreEditEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: &receiptHandle,
 			},
 		},
-		LessonCreateEvent{
-			CommonEventData: CommonEventData{
+		dekanatEvents.LessonCreateEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: &receiptHandle,
 			},
 		},
-		LessonEditEvent{
-			CommonEventData: CommonEventData{
+		dekanatEvents.LessonEditEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: &receiptHandle,
 			},
 		},
-		LessonDeletedEvent{
-			CommonEventData: CommonEventData{
+		dekanatEvents.LessonDeletedEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: &receiptHandle,
 			},
 		},

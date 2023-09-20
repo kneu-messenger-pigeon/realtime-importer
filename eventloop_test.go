@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/stretchr/testify/mock"
 	"syscall"
 	"testing"
@@ -27,21 +28,21 @@ func TestEventLoopExecute(t *testing.T) {
 
 		confirmedCalled := make(chan bool)
 
-		editedLessonsImporter.On("getConfirmed").Return(func() <-chan LessonEditEvent {
+		editedLessonsImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonEditEvent {
 			confirmedCalled <- true
-			return make(chan LessonEditEvent)
+			return make(chan dekanatEvents.LessonEditEvent)
 		}).Once()
-		createdLessonsImporter.On("getConfirmed").Return(func() <-chan LessonCreateEvent {
+		createdLessonsImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonCreateEvent {
 			confirmedCalled <- true
-			return make(chan LessonCreateEvent)
+			return make(chan dekanatEvents.LessonCreateEvent)
 		}).Once()
-		updatedScoresImporter.On("getConfirmed").Return(func() <-chan ScoreEditEvent {
+		updatedScoresImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.ScoreEditEvent {
 			confirmedCalled <- true
-			return make(chan ScoreEditEvent)
+			return make(chan dekanatEvents.ScoreEditEvent)
 		}).Once()
-		deletedScoresImporter.On("getConfirmed").Return(func() <-chan LessonDeletedEvent {
+		deletedScoresImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonDeletedEvent {
 			confirmedCalled <- true
-			return make(chan LessonDeletedEvent)
+			return make(chan dekanatEvents.LessonDeletedEvent)
 		}).Once()
 
 		fetcher.On("Fetch", matchContext).Return(func(ctx context.Context) interface{} {
@@ -117,17 +118,17 @@ func TestEventDispatchIncomingEvent(t *testing.T) {
 		deleter := NewMockEventDeleterInterface(t)
 		fetcher := NewMockEventFetcherInterface(t)
 
-		scoreEditEvent := ScoreEditEvent{}
-		lessonCreateEvent := LessonCreateEvent{}
-		lessonEditEvent := LessonEditEvent{}
-		lessonDeletedEvent := LessonDeletedEvent{}
+		scoreEditEvent := dekanatEvents.ScoreEditEvent{}
+		lessonCreateEvent := dekanatEvents.LessonCreateEvent{}
+		lessonEditEvent := dekanatEvents.LessonEditEvent{}
+		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{}
 
 		updatedScoresImporter.On("addEvent", scoreEditEvent).Once().Return()
 		createdLessonsImporter.On("addEvent", lessonCreateEvent).Once().Return()
 		deletedScoresImporter.On("addEvent", lessonDeletedEvent).Once().Return()
 		editedLessonsImporter.On("addEvent", lessonEditEvent).Once().Return()
-		// extra call based on lessonDeletedEvent
-		editedLessonsImporter.On("addEvent", LessonEditEvent{
+		// extra call based on dekanatEvents.LessonDeletedEvent
+		editedLessonsImporter.On("addEvent", dekanatEvents.LessonEditEvent{
 			CommonEventData: lessonDeletedEvent.CommonEventData,
 			IsDeleted:       true,
 		}).Once().Return()
@@ -175,26 +176,26 @@ func TestEventLoopDispatchConfirmedEvent(t *testing.T) {
 		deleter := NewMockEventDeleterInterface(t)
 		fetcher := NewMockEventFetcherInterface(t)
 
-		scoreEditEvent := ScoreEditEvent{}
-		lessonCreateEvent := LessonCreateEvent{}
-		lessonEditEvent := LessonEditEvent{}
-		lessonDeletedEvent := LessonDeletedEvent{}
+		scoreEditEvent := dekanatEvents.ScoreEditEvent{}
+		lessonCreateEvent := dekanatEvents.LessonCreateEvent{}
+		lessonEditEvent := dekanatEvents.LessonEditEvent{}
+		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{}
 
-		lessonCreateEventConfirmed := make(chan LessonCreateEvent)
-		lessonEditEventConfirmed := make(chan LessonEditEvent)
-		lessonDeletedEventConfirmed := make(chan LessonDeletedEvent)
-		scoreEditEventConfirmed := make(chan ScoreEditEvent)
+		lessonCreateEventConfirmed := make(chan dekanatEvents.LessonCreateEvent)
+		lessonEditEventConfirmed := make(chan dekanatEvents.LessonEditEvent)
+		lessonDeletedEventConfirmed := make(chan dekanatEvents.LessonDeletedEvent)
+		scoreEditEventConfirmed := make(chan dekanatEvents.ScoreEditEvent)
 
-		editedLessonsImporter.On("getConfirmed").Return(func() <-chan LessonEditEvent {
+		editedLessonsImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonEditEvent {
 			return lessonEditEventConfirmed
 		})
-		createdLessonsImporter.On("getConfirmed").Return(func() <-chan LessonCreateEvent {
+		createdLessonsImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonCreateEvent {
 			return lessonCreateEventConfirmed
 		})
-		updatedScoresImporter.On("getConfirmed").Return(func() <-chan ScoreEditEvent {
+		updatedScoresImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.ScoreEditEvent {
 			return scoreEditEventConfirmed
 		})
-		deletedScoresImporter.On("getConfirmed").Return(func() <-chan LessonDeletedEvent {
+		deletedScoresImporter.On("getConfirmed").Return(func() <-chan dekanatEvents.LessonDeletedEvent {
 			return lessonDeletedEventConfirmed
 		})
 

@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/kneu-messenger-pigeon/fileStorage"
 	_ "github.com/nakagami/firebirdsql"
@@ -111,7 +112,7 @@ func MakeEventLoop(out io.Writer, dbPool *[ConnectionPoolSize]*sql.DB, appConfig
 		},
 		writer:                lessonsWriter,
 		currentYear:           currentYearWatcher,
-		eventQueue:            []LessonCreateEvent{},
+		eventQueue:            []dekanatEvents.LessonCreateEvent{},
 		editScoresMaxLessonId: editScoresLessonId,
 	}
 
@@ -121,7 +122,7 @@ func MakeEventLoop(out io.Writer, dbPool *[ConnectionPoolSize]*sql.DB, appConfig
 		cache:       fastcache.New(1),
 		writer:      lessonsWriter,
 		currentYear: currentYearWatcher,
-		eventQueue:  []LessonEditEvent{},
+		eventQueue:  []dekanatEvents.LessonEditEvent{},
 	}
 
 	updatedScoresImporter := &UpdatedScoresImporter{
@@ -133,7 +134,7 @@ func MakeEventLoop(out io.Writer, dbPool *[ConnectionPoolSize]*sql.DB, appConfig
 		},
 		writer:      scoresWriter,
 		currentYear: currentYearWatcher,
-		eventQueue:  []ScoreEditEvent{},
+		eventQueue:  []dekanatEvents.ScoreEditEvent{},
 		maxLessonId: editScoresLessonId,
 	}
 
@@ -143,7 +144,7 @@ func MakeEventLoop(out io.Writer, dbPool *[ConnectionPoolSize]*sql.DB, appConfig
 		cache:       fastcache.New(1),
 		writer:      scoresWriter,
 		currentYear: currentYearWatcher,
-		eventQueue:  []LessonDeletedEvent{},
+		eventQueue:  []dekanatEvents.LessonDeletedEvent{},
 	}
 
 	eventLoop := EventLoop{

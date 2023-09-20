@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/VictoriaMetrics/fastcache"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/kneu-messenger-pigeon/events/mocks"
 	"github.com/segmentio/kafka-go"
@@ -59,8 +60,8 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			SyncedAt: syncedAtRewrite,
 		}
 
-		lessonDeletedEvent := LessonDeletedEvent{
-			CommonEventData: CommonEventData{
+		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
@@ -98,7 +99,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
-		var confirmed LessonDeletedEvent
+		var confirmed dekanatEvents.LessonDeletedEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
 		go func() {
 			confirmed = <-deletedLessonsImporter.getConfirmed()
@@ -134,8 +135,8 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			SyncedAt: syncedAtRewrite,
 		}
 
-		lessonDeletedEvent := LessonDeletedEvent{
-			CommonEventData: CommonEventData{
+		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
@@ -175,7 +176,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 
 		deletedLessonsImporter.addEvent(lessonDeletedEvent)
 
-		var confirmed LessonDeletedEvent
+		var confirmed dekanatEvents.LessonDeletedEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
@@ -186,7 +187,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		go deletedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
-		assert.Equalf(t, LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Equalf(t, dekanatEvents.LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
@@ -212,8 +213,8 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 			SyncedAt: syncedAtRewrite,
 		}
 
-		lessonDeletedEvent := LessonDeletedEvent{
-			CommonEventData: CommonEventData{
+		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
@@ -257,7 +258,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 
 		deletedLessonsImporter.addEvent(lessonDeletedEvent)
 
-		var confirmed LessonDeletedEvent
+		var confirmed dekanatEvents.LessonDeletedEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
@@ -268,7 +269,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		go deletedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
-		assert.Equalf(t, LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Equalf(t, dekanatEvents.LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
@@ -288,8 +289,8 @@ func TestImportDeletedScoresLesson(t *testing.T) {
 		out.Reset()
 		expectedError := errors.New("expected error")
 
-		lessonDeletedEvent := LessonDeletedEvent{
-			CommonEventData: CommonEventData{
+		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      "130",
@@ -312,7 +313,7 @@ func TestImportDeletedScoresLesson(t *testing.T) {
 
 		deletedLessonsImporter.addEvent(lessonDeletedEvent)
 
-		var confirmed LessonDeletedEvent
+		var confirmed dekanatEvents.LessonDeletedEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		go func() {
@@ -323,7 +324,7 @@ func TestImportDeletedScoresLesson(t *testing.T) {
 		go deletedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
-		assert.Equalf(t, LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Equalf(t, dekanatEvents.LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)

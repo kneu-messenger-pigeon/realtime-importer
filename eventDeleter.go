@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"io"
 )
 
@@ -50,16 +51,16 @@ func (deleter *EventDeleter) Delete(event any) {
 	case *string:
 		receiptHandle = event.(*string)
 
-	case ScoreEditEvent:
-		receiptHandle = event.(ScoreEditEvent).ReceiptHandle
+	case dekanatEvents.ScoreEditEvent:
+		receiptHandle = event.(dekanatEvents.ScoreEditEvent).ReceiptHandle
 
-	case LessonCreateEvent:
-		receiptHandle = event.(LessonCreateEvent).ReceiptHandle
+	case dekanatEvents.LessonCreateEvent:
+		receiptHandle = event.(dekanatEvents.LessonCreateEvent).ReceiptHandle
 
-	case LessonEditEvent:
-		receiptHandle = event.(LessonEditEvent).ReceiptHandle
-	case LessonDeletedEvent:
-		receiptHandle = event.(LessonDeletedEvent).ReceiptHandle
+	case dekanatEvents.LessonEditEvent:
+		receiptHandle = event.(dekanatEvents.LessonEditEvent).ReceiptHandle
+	case dekanatEvents.LessonDeletedEvent:
+		receiptHandle = event.(dekanatEvents.LessonDeletedEvent).ReceiptHandle
 
 	default:
 		fmt.Fprintf(deleter.out, "Wrong input event type: %T \n", event)

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/VictoriaMetrics/fastcache"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/kneu-messenger-pigeon/events/mocks"
 	"github.com/segmentio/kafka-go"
@@ -56,8 +57,8 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			IsDeleted:    false,
 		}
 
-		lessonEditedEvent := LessonEditEvent{
-			CommonEventData: CommonEventData{
+		lessonEditedEvent := dekanatEvents.LessonEditEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(lessonId),
@@ -96,7 +97,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
-		var confirmed LessonEditEvent
+		var confirmed dekanatEvents.LessonEditEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 		go editedLessonsImporter.execute(ctx)
@@ -127,8 +128,8 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			IsDeleted:    true,
 		}
 
-		lessonEditedEvent := LessonEditEvent{
-			CommonEventData: CommonEventData{
+		lessonEditedEvent := dekanatEvents.LessonEditEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(lessonId),
@@ -168,7 +169,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
-		var confirmed LessonEditEvent
+		var confirmed dekanatEvents.LessonEditEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
 		go func() {
@@ -206,8 +207,8 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			IsDeleted:    false,
 		}
 
-		lessonEditedEvent := LessonEditEvent{
-			CommonEventData: CommonEventData{
+		lessonEditedEvent := dekanatEvents.LessonEditEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(lessonId),
@@ -249,7 +250,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			currentYear: NewMockCurrentYearGetter(t, expectedEvent.Year),
 		}
 
-		var confirmed LessonEditEvent
+		var confirmed dekanatEvents.LessonEditEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		editedLessonsImporter.addEvent(lessonEditedEvent)
 
@@ -260,7 +261,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		go editedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
-		assert.Equalf(t, LessonEditEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Equalf(t, dekanatEvents.LessonEditEvent{}, confirmed, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
@@ -291,9 +292,9 @@ func TestImportEditedLesson(t *testing.T) {
 			writer: writerMock,
 		}
 
-		var confirmed LessonEditEvent
+		var confirmed dekanatEvents.LessonEditEvent
 
-		editedLessonsImporter.addEvent(LessonEditEvent{})
+		editedLessonsImporter.addEvent(dekanatEvents.LessonEditEvent{})
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 
@@ -304,7 +305,7 @@ func TestImportEditedLesson(t *testing.T) {
 		go editedLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
-		assert.Equalf(t, LessonEditEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Equalf(t, dekanatEvents.LessonEditEvent{}, confirmed, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)

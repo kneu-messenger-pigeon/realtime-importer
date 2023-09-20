@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	eventsMocks "github.com/kneu-messenger-pigeon/events/mocks"
 	"github.com/kneu-messenger-pigeon/fileStorage"
@@ -61,8 +62,8 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			IsDeleted:    false,
 		}
 
-		lessonCreatedEvent := LessonCreateEvent{
-			CommonEventData: CommonEventData{
+		lessonCreatedEvent := dekanatEvents.LessonCreateEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      "0",
@@ -115,7 +116,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			editScoresMaxLessonId: editScoresMaxLessonId,
 		}
 
-		var confirmed LessonCreateEvent
+		var confirmed dekanatEvents.LessonCreateEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 
 		go func() {
@@ -218,8 +219,8 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			IsDeleted:    false,
 		}
 
-		lessonCreatedEvent := LessonCreateEvent{
-			CommonEventData: CommonEventData{
+		lessonCreatedEvent := dekanatEvents.LessonCreateEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      "0",
@@ -268,7 +269,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			writer:      writerMock,
 		}
 
-		var confirmed LessonCreateEvent
+		var confirmed dekanatEvents.LessonCreateEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		createdLessonsImporter.addEvent(lessonCreatedEvent)
 
@@ -279,7 +280,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		go createdLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
-		assert.Equalf(t, LessonCreateEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Equalf(t, dekanatEvents.LessonCreateEvent{}, confirmed, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
@@ -317,7 +318,7 @@ func TestImportCreatedLesson(t *testing.T) {
 			writer:  writerMock,
 		}
 
-		var confirmed LessonCreateEvent
+		var confirmed dekanatEvents.LessonCreateEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 
 		go func() {
@@ -329,7 +330,7 @@ func TestImportCreatedLesson(t *testing.T) {
 		go createdLessonsImporter.execute(ctx)
 		<-ctx.Done()
 
-		assert.Equalf(t, LessonCreateEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Equalf(t, dekanatEvents.LessonCreateEvent{}, confirmed, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)

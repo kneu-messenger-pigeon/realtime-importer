@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/kneu-messenger-pigeon/fileStorage"
 	"github.com/segmentio/kafka-go"
@@ -20,8 +21,8 @@ const LessonDefaultLastIdQuery = `SELECT FIRST 1 ID FROM T_PRJURN WHERE REGDATE 
 
 type CreatedLessonsImporterInterface interface {
 	execute(context context.Context)
-	addEvent(event LessonCreateEvent)
-	getConfirmed() <-chan LessonCreateEvent
+	addEvent(event dekanatEvents.LessonCreateEvent)
+	getConfirmed() <-chan dekanatEvents.LessonCreateEvent
 }
 
 type CreatedLessonsImporter struct {
@@ -31,9 +32,9 @@ type CreatedLessonsImporter struct {
 	writer                events.WriterInterface
 	storage               fileStorage.Interface
 	currentYear           CurrentYearWatcherInterface
-	eventQueue            []LessonCreateEvent
+	eventQueue            []dekanatEvents.LessonCreateEvent
 	eventQueueMutex       sync.Mutex
-	confirmed             chan LessonCreateEvent
+	confirmed             chan dekanatEvents.LessonCreateEvent
 	lessonMaxId           uint
 	lessonMaxIdChan       chan uint
 	editScoresMaxLessonId MaxLessonIdGetterInterface
@@ -70,7 +71,7 @@ func (importer *CreatedLessonsImporter) execute(context context.Context) {
 	}
 }
 
-func (importer *CreatedLessonsImporter) addEvent(event LessonCreateEvent) {
+func (importer *CreatedLessonsImporter) addEvent(event dekanatEvents.LessonCreateEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
@@ -83,14 +84,14 @@ func (importer *CreatedLessonsImporter) addEvent(event LessonCreateEvent) {
 	}
 }
 
-func (importer *CreatedLessonsImporter) getConfirmed() <-chan LessonCreateEvent {
+func (importer *CreatedLessonsImporter) getConfirmed() <-chan dekanatEvents.LessonCreateEvent {
 	importer.initConfirmed()
 	return importer.confirmed
 }
 
 func (importer *CreatedLessonsImporter) initConfirmed() {
 	if importer.confirmed == nil {
-		importer.confirmed = make(chan LessonCreateEvent)
+		importer.confirmed = make(chan dekanatEvents.LessonCreateEvent)
 	}
 }
 
@@ -105,7 +106,7 @@ func (importer *CreatedLessonsImporter) determineConfirmedEvents() {
 	importer.eventQueueMutex.Unlock()
 }
 
-func (importer *CreatedLessonsImporter) putIntoConfirmedIfSatisfy(event *LessonCreateEvent) bool {
+func (importer *CreatedLessonsImporter) putIntoConfirmedIfSatisfy(event *dekanatEvents.LessonCreateEvent) bool {
 	if event.Timestamp <= importer.cache.Get(event.GetDisciplineId()) {
 		fmt.Fprintf(
 			importer.out, "[%s] %T confirmed, discipline: %d \n",

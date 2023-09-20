@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/kneu-messenger-pigeon/fileStorage"
 	"github.com/segmentio/kafka-go"
@@ -19,8 +20,8 @@ const UpdateScoreQuery = ScoreSelect + ` WHERE REGDATE > ? ` + ScoreSelectOrderB
 
 type UpdatedScoresImporterInterface interface {
 	execute(context context.Context)
-	addEvent(event ScoreEditEvent)
-	getConfirmed() <-chan ScoreEditEvent
+	addEvent(event dekanatEvents.ScoreEditEvent)
+	getConfirmed() <-chan dekanatEvents.ScoreEditEvent
 }
 
 type UpdatedScoresImporter struct {
@@ -30,9 +31,9 @@ type UpdatedScoresImporter struct {
 	writer          events.WriterInterface
 	storage         fileStorage.Interface
 	currentYear     CurrentYearGetterInterface
-	eventQueue      []ScoreEditEvent
+	eventQueue      []dekanatEvents.ScoreEditEvent
 	eventQueueMutex sync.Mutex
-	confirmed       chan ScoreEditEvent
+	confirmed       chan dekanatEvents.ScoreEditEvent
 	lastRegDate     time.Time
 	maxLessonId     MaxLessonIdSetterInterface
 }
@@ -67,7 +68,7 @@ func (importer *UpdatedScoresImporter) execute(context context.Context) {
 	}
 }
 
-func (importer *UpdatedScoresImporter) addEvent(event ScoreEditEvent) {
+func (importer *UpdatedScoresImporter) addEvent(event dekanatEvents.ScoreEditEvent) {
 	if !importer.putIntoConfirmedIfSatisfy(&event) {
 		importer.eventQueueMutex.Lock()
 		importer.eventQueue = append(importer.eventQueue, event)
@@ -77,14 +78,14 @@ func (importer *UpdatedScoresImporter) addEvent(event ScoreEditEvent) {
 	}
 }
 
-func (importer *UpdatedScoresImporter) getConfirmed() <-chan ScoreEditEvent {
+func (importer *UpdatedScoresImporter) getConfirmed() <-chan dekanatEvents.ScoreEditEvent {
 	importer.initConfirmed()
 	return importer.confirmed
 }
 
 func (importer *UpdatedScoresImporter) initConfirmed() {
 	if importer.confirmed == nil {
-		importer.confirmed = make(chan ScoreEditEvent)
+		importer.confirmed = make(chan dekanatEvents.ScoreEditEvent)
 	}
 }
 
@@ -99,7 +100,7 @@ func (importer *UpdatedScoresImporter) determineConfirmedEvents() {
 	importer.eventQueueMutex.Unlock()
 }
 
-func (importer *UpdatedScoresImporter) putIntoConfirmedIfSatisfy(event *ScoreEditEvent) bool {
+func (importer *UpdatedScoresImporter) putIntoConfirmedIfSatisfy(event *dekanatEvents.ScoreEditEvent) bool {
 	if event.Timestamp <= importer.cache.Get(event.GetLessonId()) {
 		importer.confirmed <- *event
 		return true

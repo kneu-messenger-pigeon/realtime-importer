@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"io"
 	"os/signal"
 	"syscall"
@@ -35,8 +36,8 @@ func (eventLoop *EventLoop) execute() {
 }
 
 func (eventLoop *EventLoop) dispatchIncomingEvent(ctx context.Context) {
-	var lessonDeletedEvent LessonDeletedEvent
-	var lessonEditEvent LessonEditEvent
+	var lessonDeletedEvent dekanatEvents.LessonDeletedEvent
+	var lessonEditEvent dekanatEvents.LessonEditEvent
 
 	for ctx.Err() == nil {
 		event := eventLoop.fetcher.Fetch(ctx)
@@ -45,20 +46,20 @@ func (eventLoop *EventLoop) dispatchIncomingEvent(ctx context.Context) {
 		}
 
 		switch event.(type) {
-		case ScoreEditEvent:
-			eventLoop.updatedScoresImporter.addEvent(event.(ScoreEditEvent))
+		case dekanatEvents.ScoreEditEvent:
+			eventLoop.updatedScoresImporter.addEvent(event.(dekanatEvents.ScoreEditEvent))
 
-		case LessonCreateEvent:
-			eventLoop.createdLessonsImporter.addEvent(event.(LessonCreateEvent))
+		case dekanatEvents.LessonCreateEvent:
+			eventLoop.createdLessonsImporter.addEvent(event.(dekanatEvents.LessonCreateEvent))
 
-		case LessonEditEvent:
-			eventLoop.editedLessonsImporter.addEvent(event.(LessonEditEvent))
+		case dekanatEvents.LessonEditEvent:
+			eventLoop.editedLessonsImporter.addEvent(event.(dekanatEvents.LessonEditEvent))
 
-		case LessonDeletedEvent:
-			lessonDeletedEvent = event.(LessonDeletedEvent)
+		case dekanatEvents.LessonDeletedEvent:
+			lessonDeletedEvent = event.(dekanatEvents.LessonDeletedEvent)
 			eventLoop.deletedScoresImporter.addEvent(lessonDeletedEvent)
 
-			lessonEditEvent = LessonEditEvent{
+			lessonEditEvent = dekanatEvents.LessonEditEvent{
 				CommonEventData: lessonDeletedEvent.CommonEventData,
 				IsDeleted:       true,
 			}

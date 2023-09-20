@@ -4,6 +4,7 @@ package main
 
 import (
 	context "context"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -14,7 +15,7 @@ type MockCreatedLessonsImporterInterface struct {
 }
 
 // addEvent provides a mock function with given fields: event
-func (_m *MockCreatedLessonsImporterInterface) addEvent(event LessonCreateEvent) {
+func (_m *MockCreatedLessonsImporterInterface) addEvent(event dekanatEvents.LessonCreateEvent) {
 	_m.Called(event)
 }
 
@@ -24,15 +25,15 @@ func (_m *MockCreatedLessonsImporterInterface) execute(_a0 context.Context) {
 }
 
 // getConfirmed provides a mock function with given fields:
-func (_m *MockCreatedLessonsImporterInterface) getConfirmed() <-chan LessonCreateEvent {
+func (_m *MockCreatedLessonsImporterInterface) getConfirmed() <-chan dekanatEvents.LessonCreateEvent {
 	ret := _m.Called()
 
-	var r0 <-chan LessonCreateEvent
-	if rf, ok := ret.Get(0).(func() <-chan LessonCreateEvent); ok {
+	var r0 <-chan dekanatEvents.LessonCreateEvent
+	if rf, ok := ret.Get(0).(func() <-chan dekanatEvents.LessonCreateEvent); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(<-chan LessonCreateEvent)
+			r0 = ret.Get(0).(<-chan dekanatEvents.LessonCreateEvent)
 		}
 	}
 
