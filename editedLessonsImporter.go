@@ -124,6 +124,9 @@ func (importer *EditedLessonsImporter) pullEditedLessons() error {
 	lessonsUpdatedMap := make(map[uint]byte)
 	var event events.LessonEvent
 	var messages []kafka.Message
+	message := kafka.Message{
+		Key: []byte(events.LessonEventName),
+	}
 	for rows.Next() {
 		err = rows.Scan(&event.Id, &event.DisciplineId, &event.Date, &event.TypeId, &event.Semester, &event.IsDeleted)
 		if err != nil {
@@ -131,11 +134,8 @@ func (importer *EditedLessonsImporter) pullEditedLessons() error {
 			continue
 		}
 		event.Year = importer.currentYear.GetYear()
-		payload, _ := json.Marshal(event)
-		messages = append(messages, kafka.Message{
-			Key:   []byte(events.LessonEventName),
-			Value: payload,
-		})
+		message.Value, _ = json.Marshal(event)
+		messages = append(messages, message)
 		lessonsUpdatedMap[event.Id] = importer.makeLessonState(event.Date, event.TypeId, event.IsDeleted)
 	}
 	err = nil

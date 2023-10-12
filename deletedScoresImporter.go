@@ -118,6 +118,10 @@ func (importer *DeletedScoresImporter) pullDeletedScores() error {
 
 	lessonUpdatedMap := make(map[uint]bool)
 	var messages []kafka.Message
+	message := kafka.Message{
+		Key: []byte(events.ScoreEventName),
+	}
+
 	var event events.ScoreEvent
 	event.SyncedAt = time.Now()
 	for rows.Next() {
@@ -133,11 +137,8 @@ func (importer *DeletedScoresImporter) pullDeletedScores() error {
 			continue
 		}
 		event.Year = importer.currentYear.GetYear()
-		payload, _ := json.Marshal(event)
-		messages = append(messages, kafka.Message{
-			Key:   []byte(events.ScoreEventName),
-			Value: payload,
-		})
+		message.Value, _ = json.Marshal(event)
+		messages = append(messages, message)
 		if event.IsDeleted {
 			lessonUpdatedMap[event.LessonId] = true
 		}

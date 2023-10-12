@@ -117,6 +117,9 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 	}
 	lessonUpdatedMap := make(map[uint]time.Time)
 	var messages []kafka.Message
+	message := kafka.Message{
+		Key: []byte(events.ScoreEventName),
+	}
 	var event events.ScoreEvent
 	event.SyncedAt = time.Now()
 	nextLastRegDate := importer.getLastRegDate()
@@ -130,17 +133,14 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 		)
 		if err != nil {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching score: %s \n", t(), err)
-		} else {
-			event.Year = importer.currentYear.GetYear()
-			nextLastRegDate = event.UpdatedAt
-			payload, _ := json.Marshal(event)
-			messages = append(messages, kafka.Message{
-				Key:   []byte(events.ScoreEventName),
-				Value: payload,
-			})
-			lessonUpdatedMap[event.LessonId] = event.UpdatedAt
-			importer.maxLessonId.Set(event.LessonId)
+			continue
 		}
+		event.Year = importer.currentYear.GetYear()
+		nextLastRegDate = event.UpdatedAt
+		message.Value, _ = json.Marshal(event)
+		messages = append(messages, message)
+		lessonUpdatedMap[event.LessonId] = event.UpdatedAt
+		importer.maxLessonId.Set(event.LessonId)
 	}
 	err = nil
 	fmt.Fprintf(

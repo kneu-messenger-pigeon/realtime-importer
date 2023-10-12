@@ -131,6 +131,9 @@ func (importer *CreatedLessonsImporter) pullCreatedLessons() error {
 
 	var event events.LessonEvent
 	var messages []kafka.Message
+	message := kafka.Message{
+		Key: []byte(events.LessonEventName),
+	}
 	newLastId := importer.getLessonMaxId()
 	for rows.Next() {
 		err = rows.Scan(&event.Id, &event.DisciplineId, &event.Date, &event.TypeId, &event.Semester, &event.IsDeleted)
@@ -140,11 +143,8 @@ func (importer *CreatedLessonsImporter) pullCreatedLessons() error {
 		}
 		event.Year = importer.currentYear.GetYear()
 		newLastId = event.Id
-		payload, _ := json.Marshal(event)
-		messages = append(messages, kafka.Message{
-			Key:   []byte(events.LessonEventName),
-			Value: payload,
-		})
+		message.Value, _ = json.Marshal(event)
+		messages = append(messages, message)
 		disciplineUpdatedMap[event.DisciplineId] = now
 	}
 	err = nil
