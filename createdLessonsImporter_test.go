@@ -203,6 +203,70 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		fileStorageMock.AssertExpectations(t)
 	})
 
+	t.Run("VirtualGroupWithEmptyDiscipline", func(t *testing.T) {
+		lastLessonId := 10
+
+		lessonCreatedEvent := dekanatEvents.LessonCreateEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
+				ReceiptHandle: nil,
+				Timestamp:     time.Now().Unix(),
+				LessonId:      "0",
+				DisciplineId:  "-1",
+				Semester:      "0",
+			},
+			TypeId:    strconv.Itoa(rand.Intn(10) + 1),
+			Date:      "04.05.2023",
+			TeacherId: "9999",
+		}
+
+		db, dbMock, _ := sqlmock.New()
+		dbMock.ExpectQuery(regexp.QuoteMeta(LessonDefaultLastIdQuery)).WithArgs(
+			getTodayString(),
+		).WillReturnRows(
+			sqlmock.NewRows([]string{"ID"}).AddRow(strconv.Itoa(lastLessonId)),
+		)
+		dbMock.ExpectBegin()
+		dbMock.ExpectQuery(regexp.QuoteMeta(LessonsCreatedQuery)).WithArgs(
+			lastLessonId,
+		).WillReturnRows(sqlmock.NewRows(LessonsSelectExpectedColumns))
+		dbMock.ExpectRollback()
+
+		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock.On("Get").Once().Return("", nil)
+
+		editScoresMaxLessonId := mocks.NewMaxLessonIdGetterInterface(t)
+		editScoresMaxLessonId.On("Get").Return(uint(0))
+
+		createdLessonsImporter := &CreatedLessonsImporter{
+			out:                   &out,
+			db:                    db,
+			cache:                 NewTimeCache(1),
+			storage:               fileStorageMock,
+			editScoresMaxLessonId: editScoresMaxLessonId,
+		}
+
+		var confirmed dekanatEvents.LessonCreateEvent
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+
+		go func() {
+			confirmed = <-createdLessonsImporter.GetConfirmed()
+			time.Sleep(defaultForcePollInterval)
+			cancel()
+			runtime.Gosched()
+		}()
+
+		createdLessonsImporter.AddEvent(lessonCreatedEvent)
+		go createdLessonsImporter.Execute(ctx)
+		<-ctx.Done()
+
+		assert.Equalf(t, lessonCreatedEvent, confirmed, "Expect that event will be confirmed")
+
+		err := dbMock.ExpectationsWereMet()
+		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
+
+		fileStorageMock.AssertExpectations(t)
+	})
+
 	t.Run("Error rows and Error write to Kafka", func(t *testing.T) {
 		out.Reset()
 		expectedError := errors.New("expected error")
