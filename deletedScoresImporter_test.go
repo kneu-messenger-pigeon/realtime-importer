@@ -57,7 +57,8 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 				IsAbsent:  false,
 				IsDeleted: true,
 			},
-			SyncedAt: syncedAtRewrite,
+			SyncedAt:    syncedAtRewrite,
+			ScoreSource: events.Realtime,
 		}
 
 		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{
@@ -132,7 +133,8 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 				IsAbsent:  false,
 				IsDeleted: false,
 			},
-			SyncedAt: syncedAtRewrite,
+			SyncedAt:    syncedAtRewrite,
+			ScoreSource: events.Realtime,
 		}
 
 		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{
@@ -210,7 +212,8 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 				IsAbsent:  false,
 				IsDeleted: false,
 			},
-			SyncedAt: syncedAtRewrite,
+			SyncedAt:    syncedAtRewrite,
+			ScoreSource: events.Realtime,
 		}
 
 		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{

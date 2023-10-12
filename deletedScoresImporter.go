@@ -124,6 +124,7 @@ func (importer *DeletedScoresImporter) pullDeletedScores() error {
 
 	var event events.ScoreEvent
 	event.SyncedAt = time.Now()
+	event.ScoreSource = events.Realtime
 	for rows.Next() {
 		err = rows.Scan(
 			&event.Id, &event.StudentId,

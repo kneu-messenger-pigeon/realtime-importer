@@ -122,6 +122,7 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 	}
 	var event events.ScoreEvent
 	event.SyncedAt = time.Now()
+	event.ScoreSource = events.Realtime
 	nextLastRegDate := importer.getLastRegDate()
 	for rows.Next() {
 		err = rows.Scan(
