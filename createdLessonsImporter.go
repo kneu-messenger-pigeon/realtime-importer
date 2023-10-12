@@ -96,6 +96,9 @@ func (importer *CreatedLessonsImporter) initConfirmed() {
 }
 
 func (importer *CreatedLessonsImporter) determineConfirmedEvents() {
+	// force confirm all events with empty disciplineId (for virtual discipline Dekanat doesn't provide disciplineId, it's always "-1" or uint 0)
+	importer.cache.Set(0, time.Now().Unix())
+
 	length := len(importer.eventQueue)
 	for i := 0; i < length; i++ {
 		importer.putIntoConfirmedIfSatisfy(&importer.eventQueue[i])
