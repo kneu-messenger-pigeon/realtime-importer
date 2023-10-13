@@ -107,7 +107,7 @@ func (importer *EditedLessonsImporter) putIntoConfirmedIfSatisfy(event *dekanatE
 }
 
 func (importer *EditedLessonsImporter) pullEditedLessons() error {
-	lessonIds := make([]any, 0)
+	lessonIds := make([]any, 0, len(importer.eventQueue))
 	for _, event := range importer.eventQueue {
 		lessonIds = append(lessonIds, event.GetLessonId())
 	}
