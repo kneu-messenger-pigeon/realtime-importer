@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
@@ -23,7 +24,9 @@ import (
 )
 
 var LessonsSelectExpectedColumns = []string{
-	"ID", "NUM_PREDM", "DATEZAN", "NUM_VARZAN", "HALF", "isDeleted",
+	"ID", "CUSTOM_GROUP_LESSON_ID",
+	"NUM_PREDM", "DATEZAN",
+	"NUM_VARZAN", "HALF", "isDeleted",
 }
 
 func TestExecuteImportCreatedLesson(t *testing.T) {
@@ -87,7 +90,8 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			lastLessonId,
 		).WillReturnRows(
 			sqlmock.NewRows(LessonsSelectExpectedColumns).AddRow(
-				expectedEvent.Id, expectedEvent.DisciplineId, expectedEvent.Date,
+				expectedEvent.Id, sql.NullInt32{},
+				expectedEvent.DisciplineId, expectedEvent.Date,
 				expectedEvent.TypeId, expectedEvent.Semester, expectedEvent.IsDeleted,
 			),
 		)
@@ -164,7 +168,8 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			lastLessonId,
 		).WillReturnRows(
 			sqlmock.NewRows(LessonsSelectExpectedColumns).AddRow(
-				expectedEvent.Id, expectedEvent.DisciplineId, expectedEvent.Date,
+				expectedEvent.Id, sql.NullInt32{},
+				expectedEvent.DisciplineId, expectedEvent.Date,
 				expectedEvent.TypeId, expectedEvent.Semester, expectedEvent.IsDeleted,
 			),
 		)
@@ -207,6 +212,16 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 	t.Run("VirtualGroupWithEmptyDiscipline", func(t *testing.T) {
 		lastLessonId := 10
 
+		expectedEvent := events.LessonEvent{
+			Id:           uint(lastLessonId) + 1,
+			DisciplineId: uint(disciplineId),
+			TypeId:       uint8(rand.Intn(10) + 1),
+			Date:         time.Date(2022, 12, 20, 14, 36, 0, 0, time.Local),
+			Year:         2030,
+			Semester:     2,
+			IsDeleted:    false,
+		}
+
 		lessonCreatedEvent := dekanatEvents.LessonCreateEvent{
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
@@ -227,14 +242,32 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		).WillReturnRows(
 			sqlmock.NewRows([]string{"ID"}).AddRow(strconv.Itoa(lastLessonId)),
 		)
+
+		customGroupLessonId := sql.NullInt32{
+			Int32: 999,
+			Valid: true,
+		}
+
 		dbMock.ExpectBegin()
 		dbMock.ExpectQuery(regexp.QuoteMeta(LessonsCreatedQuery)).WithArgs(
 			lastLessonId,
-		).WillReturnRows(sqlmock.NewRows(LessonsSelectExpectedColumns))
+		).WillReturnRows(
+			sqlmock.NewRows(LessonsSelectExpectedColumns).
+				AddRow(
+					expectedEvent.Id, customGroupLessonId,
+					expectedEvent.DisciplineId, expectedEvent.Date,
+					expectedEvent.TypeId, expectedEvent.Semester, expectedEvent.IsDeleted,
+				),
+		)
 		dbMock.ExpectRollback()
 
 		fileStorageMock := fileStorage.NewMockInterface(t)
 		fileStorageMock.On("Get").Once().Return("", nil)
+		fileStorageMock.On("Set", strconv.Itoa(int(expectedEvent.Id))).Once().Return(nil)
+
+		writerMock := eventsMocks.NewWriterInterface(t)
+		writerMock.On("WriteMessages", matchContext, mock.MatchedBy(expectLessonEventMessage(expectedEvent))).
+			Return(nil)
 
 		editScoresMaxLessonId := mocks.NewMaxLessonIdGetterInterface(t)
 		editScoresMaxLessonId.On("Get").Return(uint(0))
@@ -244,6 +277,8 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			db:                    db,
 			cache:                 NewTimeCache(1),
 			storage:               fileStorageMock,
+			writer:                writerMock,
+			currentYear:           NewMockCurrentYearGetter(t, expectedEvent.Year),
 			editScoresMaxLessonId: editScoresMaxLessonId,
 		}
 
@@ -305,13 +340,13 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		dbMock.ExpectQuery(regexp.QuoteMeta(LessonsCreatedQuery)).WithArgs(
 			lastLessonId,
 		).WillReturnRows(
-			sqlmock.NewRows([]string{
-				"ID", "NUM_PREDM", "DATEZAN", "NUM_VARZAN", "HALF", "isDeleted",
-			}).AddRow(
-				expectedEvent.Id, expectedEvent.DisciplineId, expectedEvent.Date,
+			sqlmock.NewRows(LessonsSelectExpectedColumns).AddRow(
+				expectedEvent.Id, sql.NullInt32{},
+				expectedEvent.DisciplineId, expectedEvent.Date,
 				expectedEvent.TypeId, expectedEvent.Semester, expectedEvent.IsDeleted,
 			).AddRow( // emulate row error
-				999, 222, nil,
+				999, nil,
+				222, nil,
 				nil, nil, nil,
 			),
 		)

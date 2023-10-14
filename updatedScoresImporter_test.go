@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
@@ -22,7 +23,9 @@ import (
 )
 
 var scoreSelectExpectedColumns = []string{
-	"ID", "STUDENT_ID", "LESSON_ID", "LESSON_PART", "DISCIPLINE_ID", "SEMESTER",
+	"ID", "STUDENT_ID", "LESSON_ID", "LESSON_PART",
+	"CUSTOM_GROUP_LESSON_ID", // custom group lesson id
+	"DISCIPLINE_ID", "SEMESTER",
 	"SCORE", "IS_ABSENT", "REGDATE", "IS_DELETED",
 }
 
@@ -57,10 +60,10 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		}
 	}
 
-	t.Run("Score updated", func(t *testing.T) {
+	testScoreUpdated := func(t *testing.T, lessonId int, customGroupLessonId int) {
 		expectedEvent = events.ScoreEvent{
 			Id:           501,
-			LessonId:     130,
+			LessonId:     uint(lessonId),
 			DisciplineId: 110,
 			Year:         2030,
 			Semester:     2,
@@ -77,24 +80,39 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
-				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
-				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
 				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
 			},
 		}
 
+		if customGroupLessonId != 0 {
+			updatedScoreEvent.LessonId = strconv.Itoa(customGroupLessonId)
+			updatedScoreEvent.DisciplineId = "-1"
+		} else {
+			updatedScoreEvent.LessonId = strconv.Itoa(lessonId)
+			updatedScoreEvent.DisciplineId = strconv.Itoa(int(expectedEvent.DisciplineId))
+		}
+
+		customGroupLessonIdSql := sql.NullInt32{
+			Int32: int32(customGroupLessonId),
+			Valid: customGroupLessonId != 0,
+		}
+
+		rows := sqlmock.NewRows(scoreSelectExpectedColumns).AddRow(
+			expectedEvent.Id, expectedEvent.StudentId, expectedEvent.LessonId, expectedEvent.LessonPart,
+			customGroupLessonIdSql,
+			expectedEvent.DisciplineId, expectedEvent.Semester, expectedEvent.Value, expectedEvent.IsAbsent,
+			expectedEvent.UpdatedAt, expectedEvent.IsDeleted,
+		)
+
 		db, dbMock, _ := sqlmock.New()
+		dbMock.MatchExpectationsInOrder(true)
 
 		dbMock.ExpectBegin()
-		dbMock.ExpectQuery(regexp.QuoteMeta(UpdateScoreQuery)).WithArgs(
-			sqlmock.AnyArg(),
-		).WillReturnRows(
-			sqlmock.NewRows(scoreSelectExpectedColumns).AddRow(
-				expectedEvent.Id, expectedEvent.StudentId, expectedEvent.LessonId, expectedEvent.LessonPart,
-				expectedEvent.DisciplineId, expectedEvent.Semester, expectedEvent.Value, expectedEvent.IsAbsent,
-				expectedEvent.UpdatedAt, expectedEvent.IsDeleted,
-			),
-		)
+
+		dbMock.ExpectQuery(regexp.QuoteMeta(UpdateScoreQuery)).
+			WithArgs(sqlmock.AnyArg()).
+			WillReturnRows(rows)
+
 		dbMock.ExpectRollback()
 
 		fileStorageMock := fileStorage.NewMockInterface(t)
@@ -108,8 +126,15 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			mock.MatchedBy(expectScoreEventMessage(expectedEvent)),
 		).Return(nil)
 
+		maxLessonIdSetterTimes := 1
+		if customGroupLessonId == 0 {
+			maxLessonIdSetterTimes = 2
+		}
+
 		maxLessonIdSetter := mocks.NewMaxLessonIdSetterInterface(t)
-		maxLessonIdSetter.On("Set", expectedEvent.LessonId).Times(2).Return(nil)
+		maxLessonIdSetter.On("Set", uint(lessonId)).
+			Times(maxLessonIdSetterTimes).
+			Return(nil)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:         &out,
@@ -125,7 +150,12 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 		updatedLessonsImporter.AddEvent(updatedScoreEvent)
-		maxLessonIdSetter.AssertCalled(t, "Set", expectedEvent.LessonId)
+
+		if customGroupLessonId == 0 {
+			maxLessonIdSetter.AssertCalled(t, "Set", expectedEvent.LessonId)
+		} else {
+			maxLessonIdSetter.AssertNotCalled(t, "Set", expectedEvent.LessonId)
+		}
 
 		go updatedLessonsImporter.Execute(ctx)
 		runtime.Gosched()
@@ -142,6 +172,14 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 
 		writerMock.AssertExpectations(t)
 		fileStorageMock.AssertExpectations(t)
+	}
+
+	t.Run("Score updated - regular group", func(t *testing.T) {
+		testScoreUpdated(t, 130, 0)
+	})
+
+	t.Run("Score updated - custom group", func(t *testing.T) {
+		testScoreUpdated(t, 450, 515410)
 	})
 
 	t.Run("Score not created in DB", func(t *testing.T) {
@@ -274,10 +312,12 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		).WillReturnRows(
 			sqlmock.NewRows(scoreSelectExpectedColumns).AddRow(
 				expectedEvent.Id, expectedEvent.StudentId, expectedEvent.LessonId, expectedEvent.LessonPart,
+				sql.NullInt32{}, // custom group lesson id
 				expectedEvent.DisciplineId, expectedEvent.Semester, expectedEvent.Value, expectedEvent.IsAbsent,
 				expectedEvent.UpdatedAt, expectedEvent.IsDeleted,
 			).AddRow(
 				nil, expectedEvent.StudentId, expectedEvent.LessonId, false,
+				sql.NullInt32{}, // custom group lesson id
 				expectedEvent.DisciplineId, "", expectedEvent.Value, expectedEvent.IsAbsent,
 				nil, expectedEvent.IsDeleted,
 			),

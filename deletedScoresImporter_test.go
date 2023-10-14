@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
@@ -46,10 +47,10 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		}
 	}
 
-	t.Run("Score deleted", func(t *testing.T) {
+	testScoreDelete := func(t *testing.T, lessonId int, customGroupLessonId int) {
 		expectedEvent = events.ScoreEvent{
 			Id:           501,
-			LessonId:     130,
+			LessonId:     uint(lessonId),
 			DisciplineId: 110,
 			Semester:     2,
 			ScoreValue: events.ScoreValue{
@@ -66,24 +67,47 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 				ReceiptHandle: nil,
 				HasChanges:    true,
 				Timestamp:     time.Now().Unix(),
-				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
-				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
 				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
 			},
 		}
 
+		if customGroupLessonId != 0 {
+			lessonDeletedEvent.LessonId = strconv.Itoa(customGroupLessonId)
+			lessonDeletedEvent.DisciplineId = "undefined"
+
+		} else {
+			lessonDeletedEvent.LessonId = strconv.Itoa(lessonId)
+			lessonDeletedEvent.DisciplineId = strconv.Itoa(int(expectedEvent.DisciplineId))
+		}
+
 		db, dbMock, _ := sqlmock.New()
+		dbMock.MatchExpectationsInOrder(true)
+
+		customGroupLessonIdCell := sql.NullInt32{
+			Int32: int32(customGroupLessonId),
+			Valid: customGroupLessonId != 0,
+		}
+
+		rows := sqlmock.NewRows(scoreSelectExpectedColumns).AddRow(
+			expectedEvent.Id, expectedEvent.StudentId, expectedEvent.LessonId, expectedEvent.LessonPart,
+			customGroupLessonIdCell,
+			expectedEvent.DisciplineId, expectedEvent.Semester, expectedEvent.Value, expectedEvent.IsAbsent,
+			expectedEvent.UpdatedAt, expectedEvent.IsDeleted,
+		)
 
 		dbMock.ExpectBegin()
-		dbMock.ExpectQuery(regexp.QuoteMeta(DeletedScoreQuery)).WithArgs(
-			expectedEvent.LessonId,
-		).WillReturnRows(
-			sqlmock.NewRows(scoreSelectExpectedColumns).AddRow(
-				expectedEvent.Id, expectedEvent.StudentId, expectedEvent.LessonId, expectedEvent.LessonPart,
-				expectedEvent.DisciplineId, expectedEvent.Semester, expectedEvent.Value, expectedEvent.IsAbsent,
-				expectedEvent.UpdatedAt, expectedEvent.IsDeleted,
-			),
-		)
+
+		if customGroupLessonId != 0 {
+			dbMock.ExpectQuery(regexp.QuoteMeta(CustomGroupDeletedScoreQuery)).
+				WithArgs(customGroupLessonId).
+				WillReturnRows(rows)
+
+		} else {
+			dbMock.ExpectQuery(regexp.QuoteMeta(DeletedScoreQuery)).
+				WithArgs(lessonId).
+				WillReturnRows(rows)
+		}
+
 		dbMock.ExpectRollback()
 
 		writerMock := mocks.NewWriterInterface(t)
@@ -121,6 +145,14 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
 
 		writerMock.AssertExpectations(t)
+	}
+
+	t.Run("Score deleted - regular group", func(t *testing.T) {
+		testScoreDelete(t, 130, 0)
+	})
+
+	t.Run("Score deleted - custom group", func(t *testing.T) {
+		testScoreDelete(t, 220, 530180)
 	})
 
 	t.Run("Score not deleted", func(t *testing.T) {
@@ -157,6 +189,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		).WillReturnRows(
 			sqlmock.NewRows(scoreSelectExpectedColumns).AddRow(
 				expectedEvent.Id, expectedEvent.StudentId, expectedEvent.LessonId, expectedEvent.LessonPart,
+				sql.NullInt32{}, // custom group lesson id
 				expectedEvent.DisciplineId, expectedEvent.Semester, expectedEvent.Value, expectedEvent.IsAbsent,
 				expectedEvent.UpdatedAt, expectedEvent.IsDeleted,
 			),
@@ -192,7 +225,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		}
 		cancel()
 
-		assert.Equalf(t, dekanatEvents.LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
+		assert.Empty(t, confirmed.LessonId, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
@@ -237,10 +270,12 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		).WillReturnRows(
 			sqlmock.NewRows(scoreSelectExpectedColumns).AddRow(
 				expectedEvent.Id, expectedEvent.StudentId, expectedEvent.LessonId, expectedEvent.LessonPart,
+				sql.NullInt32{}, // custom group lesson id
 				expectedEvent.DisciplineId, expectedEvent.Semester, expectedEvent.Value, expectedEvent.IsAbsent,
 				expectedEvent.UpdatedAt, expectedEvent.IsDeleted,
 			).AddRow(
 				nil, expectedEvent.StudentId, expectedEvent.LessonId, false,
+				sql.NullInt32{}, // custom group lesson id
 				expectedEvent.DisciplineId, "", expectedEvent.Value, expectedEvent.IsAbsent,
 				nil, expectedEvent.IsDeleted,
 			),

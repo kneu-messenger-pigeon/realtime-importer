@@ -13,12 +13,15 @@ const DefaultTransactionIsolation = sql.LevelReadCommitted
 const FirebirdTimeFormat = "2006-01-02 15:04:05"
 
 const LessonsSelect = `SELECT 
-    ID, NUM_PREDM, DATEZAN, NUM_VARZAN, HALF,
+    ID,
+    ID_ZANCG AS CUSTOM_GROUP_LESSON_ID,
+    NUM_PREDM, DATEZAN, NUM_VARZAN, HALF,
     (case FSTATUS when 0 then 1 else 0 end) as isDeleted 
 FROM T_PRJURN `
 
 const ScoreSelect = `SELECT ID, ID_OBJ AS STUDENT_ID,
 	XI_2 AS LESSON_ID, XI_4 as LESSON_PART,
+	ID_ZANCG AS CUSTOM_GROUP_LESSON_ID,
 	ID_T_PD_CMS AS DISCIPLINE_ID, XI_5 as SEMESTER, 
 	COALESCE(XR_1, 0) AS SCORE,
 	(case COALESCE(XS10_4, 'NULL') when 'NULL' then 0 else 1 end) AS IS_ABSENT,

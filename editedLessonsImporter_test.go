@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
@@ -45,9 +46,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		}
 	}
 
-	t.Run("Edit valid lesson", func(t *testing.T) {
-		lessonId := 65
-
+	testEditLesson := func(t *testing.T, lessonId int, customLessonId int) {
 		expectedEvent = events.LessonEvent{
 			Id:           uint(lessonId),
 			DisciplineId: uint(disciplineId),
@@ -62,9 +61,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
-				HasChanges:    false,
-				LessonId:      strconv.Itoa(lessonId),
-				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
+				HasChanges:    true,
 				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
 			},
 			TypeId:    strconv.Itoa(int(expectedEvent.TypeId)),
@@ -72,16 +69,38 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			TeacherId: "9999",
 		}
 
+		if customLessonId != 0 {
+			lessonEditedEvent.LessonId = strconv.Itoa(customLessonId)
+			lessonEditedEvent.DisciplineId = "-1"
+		} else {
+			lessonEditedEvent.LessonId = strconv.Itoa(lessonId)
+			lessonEditedEvent.DisciplineId = strconv.Itoa(int(expectedEvent.DisciplineId))
+		}
+
+		customLessonIdCell := sql.NullInt32{
+			Int32: int32(customLessonId),
+			Valid: customLessonId != 0,
+		}
+
+		rows := sqlmock.NewRows(LessonsSelectExpectedColumns).AddRow(
+			expectedEvent.Id, customLessonIdCell,
+			expectedEvent.DisciplineId, expectedEvent.Date,
+			expectedEvent.TypeId, expectedEvent.Semester, expectedEvent.IsDeleted,
+		)
+
 		db, dbMock, _ := sqlmock.New()
 		dbMock.ExpectBegin()
-		dbMock.ExpectQuery(regexp.QuoteMeta(LessonsEditedQuery)).WithArgs(
-			lessonId,
-		).WillReturnRows(
-			sqlmock.NewRows(LessonsSelectExpectedColumns).AddRow(
-				expectedEvent.Id, expectedEvent.DisciplineId, expectedEvent.Date,
-				expectedEvent.TypeId, expectedEvent.Semester, expectedEvent.IsDeleted,
-			),
-		)
+
+		if customLessonId != 0 {
+			dbMock.ExpectQuery(regexp.QuoteMeta(CustomGroupLessonsEditedQuery)).
+				WithArgs(customLessonId).
+				WillReturnRows(rows)
+		} else {
+			dbMock.ExpectQuery(regexp.QuoteMeta(LessonsEditedQuery)).
+				WithArgs(lessonId).
+				WillReturnRows(rows)
+		}
+
 		dbMock.ExpectRollback()
 
 		writerMock := mocks.NewWriterInterface(t)
@@ -100,15 +119,19 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		}
 
 		var confirmed dekanatEvents.LessonEditEvent
+		editedLessonsImporter.AddEvent(lessonEditedEvent)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 		go editedLessonsImporter.Execute(ctx)
 		runtime.Gosched()
-		editedLessonsImporter.AddEvent(lessonEditedEvent)
-		confirmed = <-editedLessonsImporter.GetConfirmed()
-		time.Sleep(defaultPollInterval)
+
+		select {
+		case confirmed = <-editedLessonsImporter.GetConfirmed():
+			time.Sleep(defaultPollInterval)
+		case <-ctx.Done():
+		}
 		cancel()
-		time.Sleep(time.Millisecond * 100)
+		runtime.Gosched()
 
 		assert.Equalf(t, lessonEditedEvent, confirmed, "Expect that event will be confirmed")
 
@@ -116,6 +139,14 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
 
 		writerMock.AssertExpectations(t)
+	}
+
+	t.Run("Edit valid lesson - regular group", func(t *testing.T) {
+		testEditLesson(t, 65, 0)
+	})
+
+	t.Run("Edit valid lesson - cusotom group", func(t *testing.T) {
+		testEditLesson(t, 110, 520210)
 	})
 
 	t.Run("Lesson deleted", func(t *testing.T) {
@@ -152,7 +183,8 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			lessonId,
 		).WillReturnRows(
 			sqlmock.NewRows(LessonsSelectExpectedColumns).AddRow(
-				expectedEvent.Id, expectedEvent.DisciplineId, expectedEvent.Date,
+				expectedEvent.Id, sql.NullInt32{},
+				expectedEvent.DisciplineId, expectedEvent.Date,
 				expectedEvent.TypeId, expectedEvent.Semester, expectedEvent.IsDeleted,
 			),
 		)
@@ -179,13 +211,13 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		editedLessonsImporter.AddEvent(lessonEditedEvent)
 		go editedLessonsImporter.Execute(ctx)
 		runtime.Gosched()
-		confirmed = <-editedLessonsImporter.GetConfirmed()
+
+		select {
+		case confirmed = <-editedLessonsImporter.GetConfirmed():
+		case <-ctx.Done():
+		}
 		cancel()
-
-		time.Sleep(time.Nanosecond * 30)
-		time.Sleep(time.Nanosecond * 30)
-
-		<-ctx.Done()
+		runtime.Gosched()
 
 		assert.Equalf(t, lessonEditedEvent, confirmed, "Expect that event will be confirmed")
 
@@ -231,10 +263,12 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			lessonId,
 		).WillReturnRows(
 			sqlmock.NewRows(LessonsSelectExpectedColumns).AddRow(
-				expectedEvent.Id, expectedEvent.DisciplineId, expectedEvent.Date,
+				expectedEvent.Id, sql.NullInt32{},
+				expectedEvent.DisciplineId, expectedEvent.Date,
 				expectedEvent.TypeId, expectedEvent.Semester, expectedEvent.IsDeleted,
 			).AddRow( // emulate row error
-				999, 222, nil,
+				999, nil,
+				222, nil,
 				nil, nil, nil,
 			),
 		)
@@ -264,9 +298,16 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			cancel()
 		}()
 		go editedLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
 
-		assert.Equalf(t, dekanatEvents.LessonEditEvent{}, confirmed, "Expect that event will be confirmed")
+		select {
+		case confirmed = <-editedLessonsImporter.GetConfirmed():
+		case <-ctx.Done():
+		}
+		cancel()
+		runtime.Gosched()
+
+		assert.Empty(t, confirmed.LessonId, "Expect that event will be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)

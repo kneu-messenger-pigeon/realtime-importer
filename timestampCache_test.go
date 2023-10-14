@@ -13,8 +13,8 @@ func TestCacheGetSet(t *testing.T) {
 		id := uint(10)
 		expectedValue := time.Now().Unix() - 86400
 
-		cache.Set(id, expectedValue)
-		actualValue := cache.Get(id)
+		cache.Set(id, false, expectedValue)
+		actualValue := cache.Get(id, false)
 
 		assert.Equal(t, expectedValue, actualValue, "Timestamp value is not expected")
 	})
@@ -23,7 +23,7 @@ func TestCacheGetSet(t *testing.T) {
 		id := uint(20)
 		expectedValue := int64(0)
 
-		actualValue := cache.Get(id)
+		actualValue := cache.Get(id, false)
 
 		assert.Equal(t, expectedValue, actualValue, "Timestamp value is not expected")
 	})

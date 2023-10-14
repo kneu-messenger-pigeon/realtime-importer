@@ -15,6 +15,7 @@ import (
 )
 
 const LessonsEditedQuery = LessonsSelect + ` WHERE ID IN (?) ORDER BY ID ASC`
+const CustomGroupLessonsEditedQuery = LessonsSelect + ` WHERE ID_ZANCG IN (?) ORDER BY ID ASC`
 
 type EditedLessonsImporterInterface interface {
 	Execute(context context.Context)
@@ -87,7 +88,10 @@ func (importer *EditedLessonsImporter) determineConfirmedEvents() {
 }
 
 func (importer *EditedLessonsImporter) putIntoConfirmedIfSatisfy(event *dekanatEvents.LessonEditEvent) bool {
-	cachedState, exist := importer.cache.HasGet([]byte{}, uintToBytes(event.GetLessonId()))
+	cachedState, exist := importer.cache.HasGet(
+		[]byte{},
+		idToBytes(event.GetLessonId(), event.IsCustomGroup()),
+	)
 
 	if exist && cachedState[0] == importer.makeLessonState(event.GetDate(), event.GetTypeId(), event.IsDeleted) {
 		fmt.Fprintf(
@@ -101,14 +105,35 @@ func (importer *EditedLessonsImporter) putIntoConfirmedIfSatisfy(event *dekanatE
 }
 
 func (importer *EditedLessonsImporter) pullEditedLessons() error {
-	lessonIds := make([]any, 0, len(importer.eventQueue))
+	regularGroupLessonIds := make([]any, 0, len(importer.eventQueue))
+	customGroupLessonIds := make([]any, 0, len(importer.eventQueue)/4)
+
 	for _, event := range importer.eventQueue {
-		lessonIds = append(lessonIds, event.GetLessonId())
+		if event.IsCustomGroup() {
+			customGroupLessonIds = append(customGroupLessonIds, event.GetLessonId())
+		} else {
+			regularGroupLessonIds = append(regularGroupLessonIds, event.GetLessonId())
+		}
 	}
 
-	fmt.Fprintf(importer.out, "[%s] Check edited lessons ids: %v \n", t(), lessonIds)
+	var err error
+	if len(regularGroupLessonIds) != 0 {
+		fmt.Fprintf(importer.out, "[%s] Check edited lessons ids in regular groups: %v \n", t(), regularGroupLessonIds)
+		err = importer.doPullEditedLessons(LessonsEditedQuery, regularGroupLessonIds)
+	}
+
+	if len(customGroupLessonIds) != 0 && err == nil {
+		fmt.Fprintf(importer.out, "[%s] Check edited lessons ids in custom groups: %v \n", t(), regularGroupLessonIds)
+		err = importer.doPullEditedLessons(CustomGroupLessonsEditedQuery, customGroupLessonIds)
+	}
+
+	return err
+}
+
+func (importer *EditedLessonsImporter) doPullEditedLessons(query string, lessonIds []any) error {
 	tx, rows, err := queryRowsInTransaction(
-		importer.db, extractInPlaceHolder(LessonsEditedQuery, len(lessonIds)), lessonIds...,
+		importer.db, extractInPlaceHolder(query, len(lessonIds)),
+		lessonIds...,
 	)
 	defer closeRowsAndTransaction(rows, tx)
 	if err != nil {
@@ -116,13 +141,21 @@ func (importer *EditedLessonsImporter) pullEditedLessons() error {
 	}
 
 	lessonsUpdatedMap := make(map[uint]byte)
+	customGroupLessonUpdatedMap := make(map[uint]byte)
+
 	var event events.LessonEvent
 	var messages []kafka.Message
 	message := kafka.Message{
 		Key: []byte(events.LessonEventName),
 	}
+
+	customGroupLessonId := sql.NullInt32{}
+	var state byte
 	for rows.Next() {
-		err = rows.Scan(&event.Id, &event.DisciplineId, &event.Date, &event.TypeId, &event.Semester, &event.IsDeleted)
+		err = rows.Scan(
+			&event.Id, &customGroupLessonId,
+			&event.DisciplineId, &event.Date,
+			&event.TypeId, &event.Semester, &event.IsDeleted)
 		if err != nil {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching new lesson: %s \n", t(), err)
 			continue
@@ -130,7 +163,11 @@ func (importer *EditedLessonsImporter) pullEditedLessons() error {
 		event.Year = importer.currentYear.GetYear()
 		message.Value, _ = json.Marshal(event)
 		messages = append(messages, message)
-		lessonsUpdatedMap[event.Id] = importer.makeLessonState(event.Date, event.TypeId, event.IsDeleted)
+		state = importer.makeLessonState(event.Date, event.TypeId, event.IsDeleted)
+		lessonsUpdatedMap[event.Id] = state
+		if customGroupLessonId.Valid {
+			customGroupLessonUpdatedMap[uint(customGroupLessonId.Int32)] = state
+		}
 	}
 	err = nil
 	fmt.Fprintf(
@@ -141,8 +178,13 @@ func (importer *EditedLessonsImporter) pullEditedLessons() error {
 	if len(messages) != 0 {
 		err = importer.writer.WriteMessages(context.Background(), messages...)
 		if err == nil {
-			for lessonId, state := range lessonsUpdatedMap {
-				importer.cache.Set(uintToBytes(lessonId), []byte{state})
+			var lessonId uint
+			for lessonId, state = range lessonsUpdatedMap {
+				importer.cache.Set(idToBytes(lessonId, false), []byte{state})
+			}
+
+			for lessonId, state = range customGroupLessonUpdatedMap {
+				importer.cache.Set(idToBytes(lessonId, true), []byte{state})
 			}
 		}
 	}

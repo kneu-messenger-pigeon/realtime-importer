@@ -76,7 +76,9 @@ func (importer *UpdatedScoresImporter) AddEvent(event dekanatEvents.ScoreEditEve
 		importer.eventQueue = append(importer.eventQueue, event)
 		importer.eventQueueMutex.Unlock()
 
-		importer.maxLessonId.Set(event.GetLessonId())
+		if !event.IsCustomGroup() {
+			importer.maxLessonId.Set(event.GetLessonId())
+		}
 	}
 }
 
@@ -98,7 +100,7 @@ func (importer *UpdatedScoresImporter) determineConfirmedEvents() {
 }
 
 func (importer *UpdatedScoresImporter) putIntoConfirmedIfSatisfy(event *dekanatEvents.ScoreEditEvent) bool {
-	if event.Timestamp <= importer.cache.Get(event.GetLessonId()) {
+	if event.Timestamp <= importer.cache.Get(event.GetLessonId(), event.IsCustomGroup()) {
 		importer.confirmed <- *event
 		return true
 	}
@@ -122,6 +124,8 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 		return err
 	}
 	lessonUpdatedMap := make(map[uint]time.Time)
+	customLessonUpdatedMap := make(map[uint]time.Time)
+
 	var messages []kafka.Message
 	message := kafka.Message{
 		Key: []byte(events.ScoreEventName),
@@ -130,10 +134,14 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 	event.SyncedAt = time.Now()
 	event.ScoreSource = events.Realtime
 	nextLastRegDate := importer.getLastRegDate()
+
+	customGroupLessonId := sql.NullInt32{}
+
 	for rows.Next() {
 		err = rows.Scan(
 			&event.Id, &event.StudentId,
 			&event.LessonId, &event.LessonPart,
+			&customGroupLessonId,
 			&event.DisciplineId, &event.Semester,
 			&event.Value, &event.IsAbsent,
 			&event.UpdatedAt, &event.IsDeleted,
@@ -148,6 +156,10 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 		messages = append(messages, message)
 		lessonUpdatedMap[event.LessonId] = event.UpdatedAt
 		importer.maxLessonId.Set(event.LessonId)
+
+		if customGroupLessonId.Valid {
+			customLessonUpdatedMap[uint(customGroupLessonId.Int32)] = event.UpdatedAt
+		}
 	}
 	err = nil
 	fmt.Fprintf(
@@ -161,8 +173,14 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 			err = importer.writer.WriteMessages(context.Background(), messages...)
 		}
 		if err == nil {
-			for lessonId, updatedAt := range lessonUpdatedMap {
-				importer.cache.Set(lessonId, updatedAt.Unix())
+			var lessonId uint
+			var updatedAt time.Time
+			for lessonId, updatedAt = range lessonUpdatedMap {
+				importer.cache.Set(lessonId, false, updatedAt.Unix())
+			}
+
+			for lessonId, updatedAt = range customLessonUpdatedMap {
+				importer.cache.Set(lessonId, true, updatedAt.Unix())
 			}
 		}
 	}

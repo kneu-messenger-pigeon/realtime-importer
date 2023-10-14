@@ -15,6 +15,7 @@ import (
 )
 
 const DeletedScoreQuery = ScoreSelect + ` WHERE XI_2 IN (?) ` + ScoreSelectOrderBy
+const CustomGroupDeletedScoreQuery = ScoreSelect + ` WHERE ID_ZANCG IN (?) ` + ScoreSelectOrderBy
 
 type DeletedScoresImporterInterface interface {
 	Execute(context context.Context)
@@ -82,7 +83,10 @@ func (importer *DeletedScoresImporter) determineConfirmedEvents() {
 }
 
 func (importer *DeletedScoresImporter) putIntoConfirmedIfSatisfy(event *dekanatEvents.LessonDeletedEvent) bool {
-	isDeletedFlag, exist := importer.cache.HasGet([]byte{}, uintToBytes(event.GetLessonId()))
+	isDeletedFlag, exist := importer.cache.HasGet(
+		[]byte{},
+		idToBytes(event.GetLessonId(), event.IsCustomGroup()),
+	)
 
 	if exist && isDeletedFlag[0] == 1 {
 		importer.confirmed <- *event
@@ -96,14 +100,35 @@ func (importer *DeletedScoresImporter) putIntoConfirmedIfSatisfy(event *dekanatE
 }
 
 func (importer *DeletedScoresImporter) pullDeletedScores() error {
-	lessonIds := make([]any, 0, len(importer.eventQueue))
+	regularGroupLessonIds := make([]any, 0, len(importer.eventQueue))
+	customGroupLessonIds := make([]any, 0, len(importer.eventQueue)/4)
+
 	for _, event := range importer.eventQueue {
-		lessonIds = append(lessonIds, event.GetLessonId())
+		if event.IsCustomGroup() {
+			customGroupLessonIds = append(customGroupLessonIds, event.GetLessonId())
+		} else {
+			regularGroupLessonIds = append(regularGroupLessonIds, event.GetLessonId())
+		}
 	}
 
-	fmt.Fprintf(importer.out, "[%s] Check deleted scores %v \n", t(), lessonIds)
+	var err error
+
+	if len(regularGroupLessonIds) != 0 {
+		fmt.Fprintf(importer.out, "[%s] Check deleted scores in regular group %v \n", t(), regularGroupLessonIds)
+		err = importer.doPullDeletedScores(DeletedScoreQuery, regularGroupLessonIds)
+	}
+
+	if len(customGroupLessonIds) != 0 && err == nil {
+		fmt.Fprintf(importer.out, "[%s] Check deleted scores in custom group %v \n", t(), customGroupLessonIds)
+		err = importer.doPullDeletedScores(CustomGroupDeletedScoreQuery, customGroupLessonIds)
+	}
+
+	return err
+}
+
+func (importer *DeletedScoresImporter) doPullDeletedScores(query string, lessonIds []any) error {
 	tx, rows, err := queryRowsInTransaction(
-		importer.db, extractInPlaceHolder(DeletedScoreQuery, len(lessonIds)), lessonIds...,
+		importer.db, extractInPlaceHolder(query, len(lessonIds)), lessonIds...,
 	)
 	defer closeRowsAndTransaction(rows, tx)
 	if err != nil {
@@ -111,6 +136,8 @@ func (importer *DeletedScoresImporter) pullDeletedScores() error {
 	}
 
 	lessonUpdatedMap := make(map[uint]bool)
+	customLessonUpdatedMap := make(map[uint]bool)
+
 	var messages []kafka.Message
 	message := kafka.Message{
 		Key: []byte(events.ScoreEventName),
@@ -119,10 +146,14 @@ func (importer *DeletedScoresImporter) pullDeletedScores() error {
 	var event events.ScoreEvent
 	event.SyncedAt = time.Now()
 	event.ScoreSource = events.Realtime
+
+	customGroupLessonId := sql.NullInt32{}
+
 	for rows.Next() {
 		err = rows.Scan(
 			&event.Id, &event.StudentId,
 			&event.LessonId, &event.LessonPart,
+			&customGroupLessonId,
 			&event.DisciplineId, &event.Semester,
 			&event.Value, &event.IsAbsent,
 			&event.UpdatedAt, &event.IsDeleted,
@@ -136,6 +167,9 @@ func (importer *DeletedScoresImporter) pullDeletedScores() error {
 		messages = append(messages, message)
 		if event.IsDeleted {
 			lessonUpdatedMap[event.LessonId] = true
+			if customGroupLessonId.Valid {
+				customLessonUpdatedMap[uint(customGroupLessonId.Int32)] = true
+			}
 		}
 	}
 	err = nil
@@ -147,8 +181,13 @@ func (importer *DeletedScoresImporter) pullDeletedScores() error {
 	if len(messages) != 0 {
 		err = importer.writer.WriteMessages(context.Background(), messages...)
 		if err == nil {
-			for lessonId, _ := range lessonUpdatedMap {
-				importer.cache.Set(uintToBytes(lessonId), []byte{1})
+			var lessonId uint
+			for lessonId, _ = range lessonUpdatedMap {
+				importer.cache.Set(idToBytes(lessonId, false), []byte{1})
+			}
+
+			for lessonId, _ = range customLessonUpdatedMap {
+				importer.cache.Set(idToBytes(lessonId, true), []byte{1})
 			}
 		}
 	}

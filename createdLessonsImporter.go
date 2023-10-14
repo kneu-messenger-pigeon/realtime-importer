@@ -96,9 +96,6 @@ func (importer *CreatedLessonsImporter) initConfirmed() {
 }
 
 func (importer *CreatedLessonsImporter) determineConfirmedEvents() {
-	// force confirm all events with empty disciplineId (for virtual discipline Dekanat doesn't provide disciplineId, it's always "-1" or uint 0)
-	importer.cache.Set(0, time.Now().Unix())
-
 	length := len(importer.eventQueue)
 	for i := 0; i < length; i++ {
 		importer.putIntoConfirmedIfSatisfy(&importer.eventQueue[i])
@@ -110,7 +107,7 @@ func (importer *CreatedLessonsImporter) determineConfirmedEvents() {
 }
 
 func (importer *CreatedLessonsImporter) putIntoConfirmedIfSatisfy(event *dekanatEvents.LessonCreateEvent) bool {
-	if event.Timestamp <= importer.cache.Get(event.GetDisciplineId()) {
+	if event.Timestamp <= importer.cache.Get(event.GetDisciplineId(), event.IsCustomGroup()) {
 		fmt.Fprintf(
 			importer.out, "[%s] %T confirmed, discipline: %d \n",
 			t(), event, event.GetDisciplineId(),
@@ -138,8 +135,15 @@ func (importer *CreatedLessonsImporter) pullCreatedLessons() error {
 		Key: []byte(events.LessonEventName),
 	}
 	newLastId := importer.getLessonMaxId()
+
+	customGroupLessonId := sql.NullInt32{}
+	isLessonInCustomGroupCreated := false
 	for rows.Next() {
-		err = rows.Scan(&event.Id, &event.DisciplineId, &event.Date, &event.TypeId, &event.Semester, &event.IsDeleted)
+		err = rows.Scan(
+			&event.Id, &customGroupLessonId,
+			&event.DisciplineId, &event.Date,
+			&event.TypeId, &event.Semester, &event.IsDeleted,
+		)
 		if err != nil {
 			fmt.Fprintf(importer.out, "[%s] Error with fetching new lesson: %s \n", t(), err)
 			continue
@@ -149,6 +153,10 @@ func (importer *CreatedLessonsImporter) pullCreatedLessons() error {
 		message.Value, _ = json.Marshal(event)
 		messages = append(messages, message)
 		disciplineUpdatedMap[event.DisciplineId] = now
+
+		if customGroupLessonId.Valid {
+			isLessonInCustomGroupCreated = true
+		}
 	}
 	err = nil
 	fmt.Fprintf(
@@ -163,7 +171,13 @@ func (importer *CreatedLessonsImporter) pullCreatedLessons() error {
 		}
 		if err == nil {
 			for disciplineId, updatedAt := range disciplineUpdatedMap {
-				importer.cache.Set(disciplineId, updatedAt.Unix())
+				importer.cache.Set(disciplineId, false, updatedAt.Unix())
+			}
+
+			if isLessonInCustomGroupCreated {
+				// we don't receive discipline id in case with custom group.
+				// So we need to force confirm all events with empty disciplineId
+				importer.cache.Set(0, true, now.Unix())
 			}
 		}
 	}
