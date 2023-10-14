@@ -81,7 +81,7 @@ func TestEventLoopExecute(t *testing.T) {
 			currentYearWatcher:     currentYearWatcher,
 		}
 
-		timeout := time.After(time.Millisecond * 500)
+		timeout := time.After(time.Second)
 		done := make(chan bool)
 		go func() {
 			eventLoop.execute()

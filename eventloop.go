@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 )
 
 type EventLoop struct {
@@ -34,6 +35,7 @@ func (eventLoop *EventLoop) execute() {
 
 	go eventLoop.dispatchConfirmedEvent(ctx)
 	runtime.Gosched()
+	time.Sleep(time.Millisecond * 300)
 	eventLoop.dispatchIncomingEvent(ctx)
 }
 
