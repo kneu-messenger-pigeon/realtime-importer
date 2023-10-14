@@ -33,9 +33,11 @@ func (eventLoop *EventLoop) execute() {
 	go eventLoop.updatedScoresImporter.Execute(ctx)
 	go eventLoop.deletedScoresImporter.Execute(ctx)
 
-	go eventLoop.dispatchConfirmedEvent(ctx)
+	// wait while all importers will be ready, confirmed chan initialized
 	runtime.Gosched()
-	time.Sleep(time.Millisecond * 300)
+	time.Sleep(time.Millisecond * 500)
+
+	go eventLoop.dispatchConfirmedEvent(ctx)
 	eventLoop.dispatchIncomingEvent(ctx)
 }
 
