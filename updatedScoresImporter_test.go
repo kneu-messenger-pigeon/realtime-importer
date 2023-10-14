@@ -128,14 +128,14 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		maxLessonIdSetter.AssertCalled(t, "Set", expectedEvent.LessonId)
 
 		go updatedLessonsImporter.Execute(ctx)
-		time.Sleep(time.Nanosecond * 200)
-		go func() {
-			confirmed = <-updatedLessonsImporter.GetConfirmed()
+		runtime.Gosched()
+		select {
+		case confirmed = <-updatedLessonsImporter.GetConfirmed():
 			time.Sleep(defaultForcePollInterval)
 			cancel()
 			runtime.Gosched()
-		}()
-		<-ctx.Done()
+		case <-ctx.Done():
+		}
 
 		assert.Equalf(t, updatedScoreEvent, confirmed, "Expect that event will be confirmed")
 		assert.NoError(t, dbMock.ExpectationsWereMet())
@@ -145,79 +145,95 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 	})
 
 	t.Run("Score not created in DB", func(t *testing.T) {
-		expectedEvent = events.ScoreEvent{
-			Id:           501,
-			LessonId:     130,
-			DisciplineId: 110,
-			Semester:     2,
-			ScoreValue: events.ScoreValue{
-				Value:     3,
-				IsAbsent:  false,
-				IsDeleted: false,
-			},
-			SyncedAt:    syncedAtRewrite,
-			ScoreSource: events.Realtime,
+		TestScoreNotCreated := func(t *testing.T, hasChanges bool) {
+			expectedEvent = events.ScoreEvent{
+				Id:           501,
+				LessonId:     130,
+				DisciplineId: 110,
+				Semester:     2,
+				ScoreValue: events.ScoreValue{
+					Value:     3,
+					IsAbsent:  false,
+					IsDeleted: false,
+				},
+				SyncedAt:    syncedAtRewrite,
+				ScoreSource: events.Realtime,
+			}
+
+			updateScoreEvent := dekanatEvents.ScoreEditEvent{
+				CommonEventData: dekanatEvents.CommonEventData{
+					ReceiptHandle: nil,
+					Timestamp:     time.Now().Unix(),
+					HasChanges:    hasChanges,
+					LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
+					DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
+					Semester:      strconv.Itoa(int(expectedEvent.Semester)),
+				},
+			}
+
+			db, dbMock, _ := sqlmock.New()
+
+			dbMock.ExpectBegin()
+			dbMock.ExpectQuery(regexp.QuoteMeta(UpdateScoreQuery)).WithArgs(
+				lastRegDate.Format(FirebirdTimeFormat),
+			).WillReturnRows(
+				sqlmock.NewRows(scoreSelectExpectedColumns),
+			)
+			dbMock.ExpectRollback()
+
+			fileStorageMock := fileStorage.NewMockInterface(t)
+			fileStorageMock.On("Get").Once().Return(lastRegDate.Format(StorageTimeFormat), nil)
+
+			writerMock := eventsMocks.NewWriterInterface(t)
+
+			maxLessonIdSetter := mocks.NewMaxLessonIdSetterInterface(t)
+			maxLessonIdSetter.On("Set", expectedEvent.LessonId).Once().Return(nil)
+
+			updatedLessonsImporter := &UpdatedScoresImporter{
+				out:         &out,
+				db:          db,
+				cache:       NewTimeCache(1),
+				writer:      writerMock,
+				storage:     fileStorageMock,
+				maxLessonId: maxLessonIdSetter,
+			}
+
+			updatedLessonsImporter.AddEvent(updateScoreEvent)
+			maxLessonIdSetter.AssertCalled(t, "Set", expectedEvent.LessonId)
+
+			var confirmed dekanatEvents.ScoreEditEvent
+
+			ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*300)
+			go updatedLessonsImporter.Execute(ctx)
+			runtime.Gosched()
+
+			select {
+			case confirmed = <-updatedLessonsImporter.GetConfirmed():
+				cancel()
+			case <-ctx.Done():
+			}
+
+			if hasChanges {
+				assert.Empty(t, confirmed.LessonId, "Expect that event will not be confirmed - changes not found in DB")
+			} else {
+				assert.Equalf(t, updateScoreEvent, confirmed, "Expect that event will be confirmed - no changes in DB os nothing to found and confirm")
+			}
+
+			err := dbMock.ExpectationsWereMet()
+			assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
+
+			writerMock.AssertExpectations(t)
+			writerMock.AssertNotCalled(t, "WriteMessages")
+			fileStorageMock.AssertExpectations(t)
 		}
 
-		updateScoreEvent := dekanatEvents.ScoreEditEvent{
-			CommonEventData: dekanatEvents.CommonEventData{
-				ReceiptHandle: nil,
-				Timestamp:     time.Now().Unix(),
-				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
-				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
-				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
-			},
-		}
+		t.Run("Score not created in DB - no changes", func(t *testing.T) {
+			TestScoreNotCreated(t, false)
+		})
 
-		db, dbMock, _ := sqlmock.New()
-
-		dbMock.ExpectBegin()
-		dbMock.ExpectQuery(regexp.QuoteMeta(UpdateScoreQuery)).WithArgs(
-			lastRegDate.Format(FirebirdTimeFormat),
-		).WillReturnRows(
-			sqlmock.NewRows(scoreSelectExpectedColumns),
-		)
-		dbMock.ExpectRollback()
-
-		fileStorageMock := fileStorage.NewMockInterface(t)
-		fileStorageMock.On("Get").Once().Return(lastRegDate.Format(StorageTimeFormat), nil)
-
-		writerMock := eventsMocks.NewWriterInterface(t)
-
-		maxLessonIdSetter := mocks.NewMaxLessonIdSetterInterface(t)
-		maxLessonIdSetter.On("Set", expectedEvent.LessonId).Once().Return(nil)
-
-		updatedLessonsImporter := &UpdatedScoresImporter{
-			out:         &out,
-			db:          db,
-			cache:       NewTimeCache(1),
-			writer:      writerMock,
-			storage:     fileStorageMock,
-			maxLessonId: maxLessonIdSetter,
-		}
-
-		updatedLessonsImporter.AddEvent(updateScoreEvent)
-		maxLessonIdSetter.AssertCalled(t, "Set", expectedEvent.LessonId)
-
-		var confirmed dekanatEvents.ScoreEditEvent
-
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
-		go func() {
-			confirmed = <-updatedLessonsImporter.GetConfirmed()
-			cancel()
-		}()
-
-		go updatedLessonsImporter.Execute(ctx)
-		<-ctx.Done()
-
-		assert.Equalf(t, dekanatEvents.ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
-
-		err := dbMock.ExpectationsWereMet()
-		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
-
-		writerMock.AssertExpectations(t)
-		writerMock.AssertNotCalled(t, "WriteMessages")
-		fileStorageMock.AssertExpectations(t)
+		t.Run("Score not created in DB - has changes", func(t *testing.T) {
+			TestScoreNotCreated(t, true)
+		})
 	})
 
 	t.Run("Error rows and Error write to Kafka", func(t *testing.T) {
@@ -243,6 +259,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
+				HasChanges:    true,
 				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
 				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
 				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
@@ -298,15 +315,16 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		var confirmed dekanatEvents.ScoreEditEvent
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
-		go func() {
-			confirmed = <-updatedLessonsImporter.GetConfirmed()
-			cancel()
-		}()
-
 		go updatedLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
 
-		assert.Equalf(t, dekanatEvents.ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
+		select {
+		case confirmed = <-updatedLessonsImporter.GetConfirmed():
+			cancel()
+		case <-ctx.Done():
+		}
+
+		assert.Empty(t, confirmed.LessonId, "Expect that event will not be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
@@ -344,6 +362,7 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 		updateScoreEvent := dekanatEvents.ScoreEditEvent{
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
+				HasChanges:    true,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
 				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
@@ -375,16 +394,22 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 
 		var confirmed dekanatEvents.ScoreEditEvent
 
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
 		go func() {
 			confirmed = <-updatedLessonsImporter.GetConfirmed()
 			cancel()
 		}()
 
 		go updatedLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
 
-		assert.Equalf(t, dekanatEvents.ScoreEditEvent{}, confirmed, "Expect that event will be confirmed")
+		select {
+		case confirmed = <-updatedLessonsImporter.GetConfirmed():
+			cancel()
+		case <-ctx.Done():
+		}
+
+		assert.Empty(t, confirmed.LessonId, "Expect that event will not be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)

@@ -66,6 +66,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
+				HasChanges:    true,
 				LessonId:      "0",
 				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
 				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
@@ -116,19 +117,19 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			editScoresMaxLessonId: editScoresMaxLessonId,
 		}
 
-		var confirmed dekanatEvents.LessonCreateEvent
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
-
-		go func() {
-			confirmed = <-createdLessonsImporter.GetConfirmed()
-			time.Sleep(defaultForcePollInterval)
-			cancel()
-			runtime.Gosched()
-		}()
-
 		createdLessonsImporter.AddEvent(lessonCreatedEvent)
+		var confirmed dekanatEvents.LessonCreateEvent
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 		go createdLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
+
+		select {
+		case confirmed = <-createdLessonsImporter.GetConfirmed():
+			time.Sleep(defaultForcePollInterval)
+		case <-ctx.Done():
+		}
+		cancel()
 
 		assert.Equalf(t, lessonCreatedEvent, confirmed, "Expect that event will be confirmed")
 
@@ -210,6 +211,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
+				HasChanges:    true,
 				LessonId:      "0",
 				DisciplineId:  "-1",
 				Semester:      "0",
@@ -248,16 +250,17 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		var confirmed dekanatEvents.LessonCreateEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 
-		go func() {
-			confirmed = <-createdLessonsImporter.GetConfirmed()
-			time.Sleep(defaultForcePollInterval)
-			cancel()
-			runtime.Gosched()
-		}()
-
 		createdLessonsImporter.AddEvent(lessonCreatedEvent)
 		go createdLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
+
+		select {
+		case confirmed = <-createdLessonsImporter.GetConfirmed():
+			time.Sleep(defaultForcePollInterval)
+		case <-ctx.Done():
+		}
+		cancel()
+		runtime.Gosched()
 
 		assert.Equalf(t, lessonCreatedEvent, confirmed, "Expect that event will be confirmed")
 
@@ -287,6 +290,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
+				HasChanges:    true,
 				LessonId:      "0",
 				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
 				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
@@ -337,12 +341,14 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 		createdLessonsImporter.AddEvent(lessonCreatedEvent)
 
-		go func() {
-			confirmed = <-createdLessonsImporter.GetConfirmed()
-			cancel()
-		}()
 		go createdLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
+
+		select {
+		case confirmed = <-createdLessonsImporter.GetConfirmed():
+		case <-ctx.Done():
+		}
+		cancel()
 
 		assert.Equalf(t, dekanatEvents.LessonCreateEvent{}, confirmed, "Expect that event will be confirmed")
 
@@ -385,14 +391,17 @@ func TestImportCreatedLesson(t *testing.T) {
 		var confirmed dekanatEvents.LessonCreateEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 
-		go func() {
-			confirmed = <-createdLessonsImporter.GetConfirmed()
-			time.Sleep(defaultPollInterval)
-			cancel()
-			runtime.Gosched()
-		}()
 		go createdLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
+
+		select {
+		case confirmed = <-createdLessonsImporter.GetConfirmed():
+			time.Sleep(defaultPollInterval)
+		case <-ctx.Done():
+		}
+
+		cancel()
+		runtime.Gosched()
 
 		assert.Equalf(t, dekanatEvents.LessonCreateEvent{}, confirmed, "Expect that event will be confirmed")
 
@@ -471,7 +480,7 @@ func TestSetMaxLessonId(t *testing.T) {
 
 		err := createdLessonsImporter.setLessonMaxId(expectedLessonMaxId)
 		close(lessonMaxIdChan)
-		time.Sleep(time.Microsecond * 50)
+		runtime.Gosched()
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedLessonMaxId, actualLessonMaxId)

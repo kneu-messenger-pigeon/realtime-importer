@@ -6,6 +6,7 @@ import (
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"io"
 	"os/signal"
+	"runtime"
 	"syscall"
 )
 
@@ -32,6 +33,7 @@ func (eventLoop *EventLoop) execute() {
 	go eventLoop.deletedScoresImporter.Execute(ctx)
 
 	go eventLoop.dispatchConfirmedEvent(ctx)
+	runtime.Gosched()
 	eventLoop.dispatchIncomingEvent(ctx)
 }
 

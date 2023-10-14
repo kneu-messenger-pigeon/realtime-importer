@@ -34,7 +34,9 @@ type DeletedScoresImporter struct {
 }
 
 func (importer *DeletedScoresImporter) Execute(context context.Context) {
-	importer.initConfirmed()
+	if importer.confirmed == nil {
+		importer.confirmed = make(chan dekanatEvents.LessonDeletedEvent)
+	}
 
 	var err error
 	nextTick := time.Tick(defaultPollInterval)
@@ -65,15 +67,7 @@ func (importer *DeletedScoresImporter) AddEvent(event dekanatEvents.LessonDelete
 }
 
 func (importer *DeletedScoresImporter) GetConfirmed() <-chan dekanatEvents.LessonDeletedEvent {
-	importer.initConfirmed()
-
 	return importer.confirmed
-}
-
-func (importer *DeletedScoresImporter) initConfirmed() {
-	if importer.confirmed == nil {
-		importer.confirmed = make(chan dekanatEvents.LessonDeletedEvent)
-	}
 }
 
 func (importer *DeletedScoresImporter) determineConfirmedEvents() {

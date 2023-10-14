@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"math/rand"
 	"regexp"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -61,6 +62,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
+				HasChanges:    false,
 				LessonId:      strconv.Itoa(lessonId),
 				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
 				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
@@ -101,6 +103,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 		go editedLessonsImporter.Execute(ctx)
+		runtime.Gosched()
 		editedLessonsImporter.AddEvent(lessonEditedEvent)
 		confirmed = <-editedLessonsImporter.GetConfirmed()
 		time.Sleep(defaultPollInterval)
@@ -132,6 +135,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
+				HasChanges:    true,
 				LessonId:      strconv.Itoa(lessonId),
 				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
 				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
@@ -172,12 +176,12 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 		var confirmed dekanatEvents.LessonEditEvent
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
-		go func() {
-			confirmed = <-editedLessonsImporter.GetConfirmed()
-			cancel()
-		}()
 		editedLessonsImporter.AddEvent(lessonEditedEvent)
 		go editedLessonsImporter.Execute(ctx)
+		runtime.Gosched()
+		confirmed = <-editedLessonsImporter.GetConfirmed()
+		cancel()
+
 		time.Sleep(time.Nanosecond * 30)
 		time.Sleep(time.Nanosecond * 30)
 
@@ -211,6 +215,7 @@ func TestExecuteImportEditedLesson(t *testing.T) {
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
 				Timestamp:     time.Now().Unix(),
+				HasChanges:    true,
 				LessonId:      strconv.Itoa(lessonId),
 				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
 				Semester:      strconv.Itoa(int(expectedEvent.Semester)),
@@ -294,19 +299,28 @@ func TestImportEditedLesson(t *testing.T) {
 
 		var confirmed dekanatEvents.LessonEditEvent
 
-		editedLessonsImporter.AddEvent(dekanatEvents.LessonEditEvent{})
+		receiptHandle := "receiptHandle"
+
+		editedLessonsImporter.AddEvent(dekanatEvents.LessonEditEvent{
+			CommonEventData: dekanatEvents.CommonEventData{
+				HasChanges:    true,
+				ReceiptHandle: &receiptHandle,
+			},
+		})
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 
-		go func() {
-			confirmed = <-editedLessonsImporter.GetConfirmed()
-			cancel()
-		}()
 		go editedLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
 
-		assert.Equalf(t, dekanatEvents.LessonEditEvent{}, confirmed, "Expect that event will be confirmed")
+		select {
+		case confirmed = <-editedLessonsImporter.GetConfirmed():
+		case <-ctx.Done():
+		}
+		cancel()
 
+		// assert not confirmed
+		assert.Empty(t, confirmed.ReceiptHandle, "Expect that event will not be confirmed")
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
 

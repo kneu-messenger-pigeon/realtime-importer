@@ -64,6 +64,7 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 		lessonDeletedEvent := dekanatEvents.LessonDeletedEvent{
 			CommonEventData: dekanatEvents.CommonEventData{
 				ReceiptHandle: nil,
+				HasChanges:    true,
 				Timestamp:     time.Now().Unix(),
 				LessonId:      strconv.Itoa(int(expectedEvent.LessonId)),
 				DisciplineId:  strconv.Itoa(int(expectedEvent.DisciplineId)),
@@ -102,16 +103,17 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 
 		var confirmed dekanatEvents.LessonDeletedEvent
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
-		go func() {
-			confirmed = <-deletedLessonsImporter.GetConfirmed()
+		deletedLessonsImporter.AddEvent(lessonDeletedEvent)
+		go deletedLessonsImporter.Execute(ctx)
+		runtime.Gosched()
+
+		select {
+		case confirmed = <-deletedLessonsImporter.GetConfirmed():
 			time.Sleep(defaultPollInterval)
 			cancel()
 			runtime.Gosched()
-		}()
-		deletedLessonsImporter.AddEvent(lessonDeletedEvent)
-		time.Sleep(time.Nanosecond * 100)
-		go deletedLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		case <-ctx.Done():
+		}
 
 		assert.Equalf(t, lessonDeletedEvent, confirmed, "Expect that event will be confirmed")
 
@@ -180,14 +182,15 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 
 		var confirmed dekanatEvents.LessonDeletedEvent
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
-		go func() {
-			confirmed = <-deletedLessonsImporter.GetConfirmed()
-			cancel()
-		}()
-
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
 		go deletedLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
+
+		select {
+		case confirmed = <-deletedLessonsImporter.GetConfirmed():
+		case <-ctx.Done():
+		}
+		cancel()
 
 		assert.Equalf(t, dekanatEvents.LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
 
@@ -263,16 +266,17 @@ func TestExecuteImportDeletedScores(t *testing.T) {
 
 		var confirmed dekanatEvents.LessonDeletedEvent
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
-		go func() {
-			confirmed = <-deletedLessonsImporter.GetConfirmed()
-			cancel()
-		}()
-
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
 		go deletedLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
 
-		assert.Equalf(t, dekanatEvents.LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
+		select {
+		case confirmed = <-deletedLessonsImporter.GetConfirmed():
+		case <-ctx.Done():
+		}
+		cancel()
+
+		assert.Empty(t, confirmed.LessonId, "Expect that event will not be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
@@ -318,16 +322,17 @@ func TestImportDeletedScoresLesson(t *testing.T) {
 
 		var confirmed dekanatEvents.LessonDeletedEvent
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
-		go func() {
-			confirmed = <-deletedLessonsImporter.GetConfirmed()
-			cancel()
-		}()
-
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
 		go deletedLessonsImporter.Execute(ctx)
-		<-ctx.Done()
+		runtime.Gosched()
 
-		assert.Equalf(t, dekanatEvents.LessonDeletedEvent{}, confirmed, "Expect that event will be confirmed")
+		select {
+		case confirmed = <-deletedLessonsImporter.GetConfirmed():
+		case <-ctx.Done():
+		}
+		cancel()
+
+		assert.Empty(t, confirmed.LessonId, "Expect that event will not be confirmed")
 
 		err := dbMock.ExpectationsWereMet()
 		assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)

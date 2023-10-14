@@ -39,7 +39,9 @@ type UpdatedScoresImporter struct {
 }
 
 func (importer *UpdatedScoresImporter) Execute(context context.Context) {
-	importer.initConfirmed()
+	if importer.confirmed == nil {
+		importer.confirmed = make(chan dekanatEvents.ScoreEditEvent)
+	}
 
 	var err error
 	nextTick := time.Tick(defaultPollInterval)
@@ -79,20 +81,15 @@ func (importer *UpdatedScoresImporter) AddEvent(event dekanatEvents.ScoreEditEve
 }
 
 func (importer *UpdatedScoresImporter) GetConfirmed() <-chan dekanatEvents.ScoreEditEvent {
-	importer.initConfirmed()
 	return importer.confirmed
-}
-
-func (importer *UpdatedScoresImporter) initConfirmed() {
-	if importer.confirmed == nil {
-		importer.confirmed = make(chan dekanatEvents.ScoreEditEvent)
-	}
 }
 
 func (importer *UpdatedScoresImporter) determineConfirmedEvents() {
 	length := len(importer.eventQueue)
 	for i := 0; i < length; i++ {
-		importer.putIntoConfirmedIfSatisfy(&importer.eventQueue[i])
+		if !importer.putIntoConfirmedIfSatisfy(&importer.eventQueue[i]) {
+			importer.putIntoConfirmedIfHasNoChanges(&importer.eventQueue[i])
+		}
 	}
 
 	importer.eventQueueMutex.Lock()
@@ -105,6 +102,15 @@ func (importer *UpdatedScoresImporter) putIntoConfirmedIfSatisfy(event *dekanatE
 		importer.confirmed <- *event
 		return true
 	}
+	return false
+}
+
+func (importer *UpdatedScoresImporter) putIntoConfirmedIfHasNoChanges(event *dekanatEvents.ScoreEditEvent) bool {
+	if !event.HasChanges {
+		importer.confirmed <- *event
+		return true
+	}
+
 	return false
 }
 

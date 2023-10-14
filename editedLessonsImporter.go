@@ -51,8 +51,6 @@ func (importer *EditedLessonsImporter) Execute(context context.Context) {
 
 		select {
 		case <-context.Done():
-			close(importer.confirmed)
-			importer.confirmed = nil
 			return
 
 		case <-nextTick:
@@ -74,10 +72,6 @@ func (importer *EditedLessonsImporter) AddEvent(event dekanatEvents.LessonEditEv
 }
 
 func (importer *EditedLessonsImporter) GetConfirmed() <-chan dekanatEvents.LessonEditEvent {
-	if importer.confirmed == nil {
-		importer.confirmed = make(chan dekanatEvents.LessonEditEvent)
-	}
-
 	return importer.confirmed
 }
 
