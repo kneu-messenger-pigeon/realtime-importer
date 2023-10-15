@@ -11,6 +11,7 @@ import (
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/kneu-messenger-pigeon/fileStorage"
+	victoriaMetricsInit "github.com/kneu-messenger-pigeon/victoria-metrics-init"
 	_ "github.com/nakagami/firebirdsql"
 	"github.com/segmentio/kafka-go"
 	"io"
@@ -32,6 +33,8 @@ func runApp(out io.Writer) error {
 		envFilename = ".env"
 	}
 	appConfig, err := loadConfig(envFilename)
+
+	victoriaMetricsInit.InitMetrics("realtime-importer")
 
 	if err == nil {
 		awsCfg, err = awsConfig.LoadDefaultConfig(context.Background())
