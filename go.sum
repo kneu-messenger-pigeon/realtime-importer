@@ -57,8 +57,8 @@ github.com/kneu-messenger-pigeon/events v0.1.41 h1:Yzzp7oyVArzKzzI93HmLX+k3lUn8E
 github.com/kneu-messenger-pigeon/events v0.1.41/go.mod h1:Q6X8B9gKZpKbby9gisLumvGT1xCWBM7bAFnviYi6MBQ=
 github.com/kneu-messenger-pigeon/fileStorage v1.0.1 h1:9ncIZaUXDv5SwB5KtWae/CSYYye1m/z4R7hU1WmBnWQ=
 github.com/kneu-messenger-pigeon/fileStorage v1.0.1/go.mod h1:v6IRKfG5C45B6Ls6781bmnLNwAE3e6ZcWuU0N55l66M=
-github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.1 h1:ndU8DvMAnaMZIZ+hLKaQCTNGcRBBQpvRZ/7CtE/UXu0=
-github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.1/go.mod h1:HxDZwQUrMLgZNdLFT1llblZ7Zj6EBpBk7+9tcU4NZCk=
+github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.2 h1:jtKQpIefoZBJzgniS4+wM/HU+IgAPkhdOZa4B52RZA0=
+github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.2/go.mod h1:HxDZwQUrMLgZNdLFT1llblZ7Zj6EBpBk7+9tcU4NZCk=
 github.com/mattn/go-sqlite3 v1.14.16 h1:yOQRA0RpS5PFz/oikGwBEqvAWhWg5ufRz4ETLjwpU1Y=
 github.com/mattn/go-sqlite3 v1.14.16/go.mod h1:2eHXhiwb8IkHr+BDWZGa96P6+rkvnG63S2DGjv9HUNg=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=

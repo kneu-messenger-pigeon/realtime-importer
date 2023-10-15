@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	victoriaMetricsInit "github.com/kneu-messenger-pigeon/victoria-metrics-init"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -44,6 +45,8 @@ func TestRunApp(t *testing.T) {
 		assert.Contains(t, outputString, "Loaded default max lesson id")
 		assert.Contains(t, outputString, "Failed to get LessonMax from file near")
 		assert.Contains(t, outputString, "Check new lessons created after the lesson")
+
+		assert.Equal(t, "realtime-importer", victoriaMetricsInit.LastInstance)
 	})
 
 	t.Run("Run with wrong env file", func(t *testing.T) {
