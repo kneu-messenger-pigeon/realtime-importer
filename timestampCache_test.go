@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestCacheGetSet(t *testing.T) {
+func TestTimeCacheGetSet(t *testing.T) {
 	cache := NewTimeCache(1)
 
 	t.Run("Valid time get-set", func(t *testing.T) {

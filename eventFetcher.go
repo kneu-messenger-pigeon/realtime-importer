@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"io"
 )
@@ -17,6 +18,7 @@ type eventFetcher struct {
 	client      SqsApiClientInterface
 	sqsQueueUrl *string
 	deleter     EventDeleterInterface
+	countCache  *countCache
 }
 
 func (fetcher eventFetcher) Fetch(context context.Context) (event interface{}) {
@@ -27,7 +29,9 @@ func (fetcher eventFetcher) Fetch(context context.Context) (event interface{}) {
 	}
 	var err error
 	var msgResult *sqs.ReceiveMessageOutput
+	var sqsMessage *types.Message
 	var message *dekanatEvents.Message
+	var eventReceiveCount uint8
 
 	for context.Err() == nil {
 		msgResult, err = fetcher.client.ReceiveMessage(context, gMInput)
@@ -40,12 +44,20 @@ func (fetcher eventFetcher) Fetch(context context.Context) (event interface{}) {
 			continue
 		}
 
-		message, err = dekanatEvents.CreateMessage(msgResult.Messages[0].Body, msgResult.Messages[0].ReceiptHandle)
+		sqsMessage = &msgResult.Messages[0]
+
+		message, err = dekanatEvents.CreateMessage(sqsMessage.Body, sqsMessage.ReceiptHandle)
 		if err == nil {
 			event, err = message.ToEvent()
 		}
 
 		if err == nil && event != nil {
+			eventReceiveCount = fetcher.countCache.Get(sqsMessage.MessageId)
+			fetcher.countCache.Set(sqsMessage.MessageId, eventReceiveCount+1)
+			if eventReceiveCount == 0 {
+				trackEventMetrics(event)
+			}
+
 			return event
 		}
 

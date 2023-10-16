@@ -20,6 +20,8 @@ var sqsQueueUrl = "test-sqs-url"
 
 func TestEventFetcher_Fetch(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
+		incomingLessonCreateTotal.Set(0)
+
 		expectedEvent := dekanatEvents.LessonCreateEvent{
 			CommonEventData: dekanatEvents.CommonEventData{
 				Timestamp:    1673000000,
@@ -41,6 +43,9 @@ func TestEventFetcher_Fetch(t *testing.T) {
 		assert.Equal(t, uint(0), event.GetLessonId())
 		assert.Equal(t, uint(193000), event.GetDisciplineId())
 		assert.Equal(t, "0", event.Semester)
+
+		assert.Equal(t, uint64(1), incomingLessonCreateTotal.Get())
+
 	})
 
 	t.Run("Wrong form", func(t *testing.T) {
@@ -98,6 +103,7 @@ func TestEventFetcher_Fetch(t *testing.T) {
 			out:         out,
 			sqsQueueUrl: &sqsQueueUrl,
 			client:      sqsClientMock,
+			countCache:  NewCountCache(1),
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
@@ -119,11 +125,13 @@ func fetchMessage(t *testing.T, messageJSON *string, expectDelete bool) interfac
 	deleterMock := mocks.NewEventDeleterInterface(t)
 
 	receiptHandle := "ReceiptHandle"
+	messageId := "MessageId"
 	sqsMessageOutput := &sqs.ReceiveMessageOutput{
 		Messages: []sqstypes.Message{
 			{
 				ReceiptHandle: &receiptHandle,
 				Body:          aws.String(*messageJSON),
+				MessageId:     &messageId,
 			},
 		},
 	}
@@ -149,6 +157,7 @@ func fetchMessage(t *testing.T, messageJSON *string, expectDelete bool) interfac
 		sqsQueueUrl: &sqsQueueUrl,
 		client:      sqsClientMock,
 		deleter:     deleterMock,
+		countCache:  NewCountCache(1),
 	}
 
 	ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond)

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/VictoriaMetrics/metrics"
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"io"
 	"os/signal"
@@ -22,13 +21,6 @@ type EventLoop struct {
 	deletedScoresImporter  DeletedScoresImporterInterface
 	currentYearWatcher     CurrentYearWatcherInterface
 }
-
-var (
-	incomingLessonCreateTotal  = metrics.NewCounter(`incoming_realtime_events_total{type="lesson_create"}`)
-	incomingLessonEditTotal    = metrics.NewCounter(`incoming_realtime_events_total{type="lesson_edit"}`)
-	incomingLessonDeletedTotal = metrics.NewCounter(`incoming_realtime_events_total{type="lesson_deleted"}`)
-	incomingScoreEditTotal     = metrics.NewCounter(`incoming_realtime_events_total{type="score_edit"}`)
-)
 
 func (eventLoop *EventLoop) execute() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -61,19 +53,15 @@ func (eventLoop *EventLoop) dispatchIncomingEvent(ctx context.Context) {
 
 		switch event.(type) {
 		case dekanatEvents.ScoreEditEvent:
-			incomingScoreEditTotal.Inc()
 			eventLoop.updatedScoresImporter.AddEvent(event.(dekanatEvents.ScoreEditEvent))
 
 		case dekanatEvents.LessonCreateEvent:
-			incomingLessonCreateTotal.Inc()
 			eventLoop.createdLessonsImporter.AddEvent(event.(dekanatEvents.LessonCreateEvent))
 
 		case dekanatEvents.LessonEditEvent:
-			incomingLessonEditTotal.Inc()
 			eventLoop.editedLessonsImporter.AddEvent(event.(dekanatEvents.LessonEditEvent))
 
 		case dekanatEvents.LessonDeletedEvent:
-			incomingLessonDeletedTotal.Inc()
 			lessonDeletedEvent = event.(dekanatEvents.LessonDeletedEvent)
 			eventLoop.deletedScoresImporter.AddEvent(lessonDeletedEvent)
 

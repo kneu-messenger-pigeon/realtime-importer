@@ -68,6 +68,7 @@ func MakeEventLoop(out io.Writer, dbPool *[ConnectionPoolSize]*sql.DB, appConfig
 		client:      client,
 		sqsQueueUrl: &appConfig.sqsQueueUrl,
 		deleter:     deleter,
+		countCache:  NewCountCache(1),
 	}
 
 	lessonsWriter := &kafka.Writer{
