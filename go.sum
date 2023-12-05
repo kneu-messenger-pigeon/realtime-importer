@@ -51,8 +51,8 @@ github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 h1:iQTw/8FWTuc7uia
 github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0/go.mod h1:1NbS8ALrpOvjt0rHPNLyCIeMtbizbir8U//inJ+zuB8=
 github.com/klauspost/compress v1.15.9 h1:wKRjX6JRtDdrE9qwa4b/Cip7ACOshUI4smpCQanqjSY=
 github.com/klauspost/compress v1.15.9/go.mod h1:PhcZ0MbTNciWF3rruxRgKxI5NkcHHrHUDtV4Yw2GlzU=
-github.com/kneu-messenger-pigeon/dekanat-events v0.1.9 h1:AUHWG9Du/q7Q2ShNE5xBZqxOzFfLV+EIki/gJdgmX8U=
-github.com/kneu-messenger-pigeon/dekanat-events v0.1.9/go.mod h1:KC0hflA3057dtpg2Mtpbhma9Z3n8Y43vwyygZODzO/Y=
+github.com/kneu-messenger-pigeon/dekanat-events v0.1.10 h1:GMuL+pWW5MVH+Zl7cY+NrZlqZqpZcCGXiMjS7FgjeHw=
+github.com/kneu-messenger-pigeon/dekanat-events v0.1.10/go.mod h1:KC0hflA3057dtpg2Mtpbhma9Z3n8Y43vwyygZODzO/Y=
 github.com/kneu-messenger-pigeon/events v0.1.41 h1:Yzzp7oyVArzKzzI93HmLX+k3lUn8E3dKUk9uNF3le+8=
 github.com/kneu-messenger-pigeon/events v0.1.41/go.mod h1:Q6X8B9gKZpKbby9gisLumvGT1xCWBM7bAFnviYi6MBQ=
 github.com/kneu-messenger-pigeon/fileStorage v1.0.1 h1:9ncIZaUXDv5SwB5KtWae/CSYYye1m/z4R7hU1WmBnWQ=

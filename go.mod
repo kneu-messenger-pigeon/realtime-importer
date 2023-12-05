@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.39
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.24.5
 	github.com/joho/godotenv v1.4.0
-	github.com/kneu-messenger-pigeon/dekanat-events v0.1.9
+	github.com/kneu-messenger-pigeon/dekanat-events v0.1.10
 	github.com/kneu-messenger-pigeon/events v0.1.41
 	github.com/kneu-messenger-pigeon/fileStorage v1.0.1
 	github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.2
