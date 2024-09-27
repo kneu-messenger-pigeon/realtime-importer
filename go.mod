@@ -12,7 +12,7 @@ require (
 	github.com/joho/godotenv v1.4.0
 	github.com/kneu-messenger-pigeon/dekanat-events v0.1.10
 	github.com/kneu-messenger-pigeon/events v0.1.41
-	github.com/kneu-messenger-pigeon/fileStorage v1.1.2
+	github.com/kneu-messenger-pigeon/fileStorage v1.1.4
 	github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.2
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/nakagami/firebirdsql v0.9.4

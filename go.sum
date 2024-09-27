@@ -59,6 +59,10 @@ github.com/kneu-messenger-pigeon/fileStorage v1.1.1 h1:+UnSwQ2ADQq41WemAl0LvvGMY
 github.com/kneu-messenger-pigeon/fileStorage v1.1.1/go.mod h1:v6IRKfG5C45B6Ls6781bmnLNwAE3e6ZcWuU0N55l66M=
 github.com/kneu-messenger-pigeon/fileStorage v1.1.2 h1:kH8AklG9rTxF1t8+ZdjALizAXOh9QCYV1qEwk8pPTfA=
 github.com/kneu-messenger-pigeon/fileStorage v1.1.2/go.mod h1:v6IRKfG5C45B6Ls6781bmnLNwAE3e6ZcWuU0N55l66M=
+github.com/kneu-messenger-pigeon/fileStorage v1.1.3 h1:tb6u8VFxaQUfrV6NUdKjAmRX7T4QzPFLXHdrLwa17NE=
+github.com/kneu-messenger-pigeon/fileStorage v1.1.3/go.mod h1:v6IRKfG5C45B6Ls6781bmnLNwAE3e6ZcWuU0N55l66M=
+github.com/kneu-messenger-pigeon/fileStorage v1.1.4 h1:wFBmG9tQV2PBEwfsa3bWS1RnfHpK+bSsINmDrO34gbw=
+github.com/kneu-messenger-pigeon/fileStorage v1.1.4/go.mod h1:v6IRKfG5C45B6Ls6781bmnLNwAE3e6ZcWuU0N55l66M=
 github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.2 h1:jtKQpIefoZBJzgniS4+wM/HU+IgAPkhdOZa4B52RZA0=
 github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.2/go.mod h1:HxDZwQUrMLgZNdLFT1llblZ7Zj6EBpBk7+9tcU4NZCk=
 github.com/mattn/go-sqlite3 v1.14.16 h1:yOQRA0RpS5PFz/oikGwBEqvAWhWg5ufRz4ETLjwpU1Y=

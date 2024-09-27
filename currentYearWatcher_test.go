@@ -7,7 +7,7 @@ import (
 	"errors"
 	"github.com/kneu-messenger-pigeon/events"
 	"github.com/kneu-messenger-pigeon/events/mocks"
-	"github.com/kneu-messenger-pigeon/fileStorage"
+	fileStorageMocks "github.com/kneu-messenger-pigeon/fileStorage/mocks"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -20,7 +20,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 		var out bytes.Buffer
 
 		reader := mocks.NewReaderInterface(t)
-		storage := fileStorage.NewMockInterface(t)
+		storage := fileStorageMocks.NewInterface(t)
 		storage.On("Get").Return(nil, nil)
 
 		currentYearWatcher := CurrentYearWatcher{
@@ -69,7 +69,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 		}, nil)
 		reader.On("CommitMessages", matchContext, message).Return(expectedError)
 
-		storage := fileStorage.NewMockInterface(t)
+		storage := fileStorageMocks.NewInterface(t)
 		storage.On("Get").Return(uintToBytes(2024), nil)
 		storage.On(
 			"Set",
@@ -125,7 +125,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 			return message
 		}, expectedError)
 
-		storage := fileStorage.NewMockInterface(t)
+		storage := fileStorageMocks.NewInterface(t)
 		storage.On("Get").Return(uintToBytes(2024), nil)
 
 		currentYearWatcher := CurrentYearWatcher{
@@ -173,7 +173,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 			return message
 		}, nil)
 
-		storage := fileStorage.NewMockInterface(t)
+		storage := fileStorageMocks.NewInterface(t)
 		storage.On("Get").Return(uintToBytes(2024), nil)
 		storage.On(
 			"Set",

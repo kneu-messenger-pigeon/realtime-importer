@@ -11,7 +11,7 @@ import (
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	eventsMocks "github.com/kneu-messenger-pigeon/events/mocks"
-	"github.com/kneu-messenger-pigeon/fileStorage"
+	fileStorageMocks "github.com/kneu-messenger-pigeon/fileStorage/mocks"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -122,7 +122,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 
 		dbMock.ExpectRollback()
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Get").Times(2).Return(nil, nil)
 		fileStorageMock.On("Set", timeToBytes(expectedEvent.UpdatedAt)).Once().Return(nil)
 
@@ -226,7 +226,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			)
 			dbMock.ExpectRollback()
 
-			fileStorageMock := fileStorage.NewMockInterface(t)
+			fileStorageMock := fileStorageMocks.NewInterface(t)
 			fileStorageMock.On("Get").Once().Return(timeToBytes(lastRegDate), nil)
 
 			writerMock := eventsMocks.NewWriterInterface(t)
@@ -332,7 +332,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Get").Once().Return(timeToBytes(lastRegDate), nil)
 		fileStorageMock.On(
 			"Set", timeToBytes(expectedEvent.UpdatedAt),
@@ -421,7 +421,7 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 		db, dbMock, _ := sqlmock.New()
 		dbMock.ExpectBegin().WillReturnError(expectedError)
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Get").Once().Return(nil, nil)
 
 		writerMock := eventsMocks.NewWriterInterface(t)
@@ -476,7 +476,7 @@ func TestGetLastRegDate(t *testing.T) {
 		out.Reset()
 		expectedError := errors.New("expected error")
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Get").Once().Return(nil, expectedError)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{
@@ -506,7 +506,7 @@ func TestSetLastRegDate(t *testing.T) {
 			0, now.Location(),
 		).Add(-time.Minute * 10)
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On(
 			"Set", timeToBytes(newLastRegDate),
 		).Once().Return(expectedError)

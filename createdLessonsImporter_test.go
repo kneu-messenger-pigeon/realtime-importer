@@ -11,7 +11,7 @@ import (
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/kneu-messenger-pigeon/events"
 	eventsMocks "github.com/kneu-messenger-pigeon/events/mocks"
-	"github.com/kneu-messenger-pigeon/fileStorage"
+	fileStorageMocks "github.com/kneu-messenger-pigeon/fileStorage/mocks"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -104,7 +104,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Get").Once().Return([]byte{}, nil)
 		fileStorageMock.On("Set", uintToBytes(expectedEvent.Id)).Once().Return(nil)
 
@@ -182,7 +182,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Get").Once().Return(nil, nil)
 		fileStorageMock.On("Set", uintToBytes(expectedEvent.Id)).Once().Return(nil)
 
@@ -268,7 +268,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Get").Once().Return(nil, nil)
 		fileStorageMock.On("Set", uintToBytes(expectedEvent.Id)).Once().Return(nil)
 
@@ -359,7 +359,7 @@ func TestExecuteImportCreatedLesson(t *testing.T) {
 		)
 		dbMock.ExpectRollback()
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Get").Once().Return(uintToBytes(lastLessonId), nil)
 		fileStorageMock.On("Set", uintToBytes(expectedEvent.Id)).Once().Return(nil)
 
@@ -417,7 +417,7 @@ func TestImportCreatedLesson(t *testing.T) {
 		db, dbMock, _ := sqlmock.New()
 		dbMock.ExpectBegin().WillReturnError(expectedError)
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Get").Once().Return(uintToBytes(lastLessonId), nil)
 
 		writerMock := eventsMocks.NewWriterInterface(t)
@@ -465,7 +465,7 @@ func TestGetMaxLessonId(t *testing.T) {
 	t.Run("Fail get max Lesson id", func(t *testing.T) {
 		expectedError := errors.New("expected error")
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Get").Once().Return(nil, expectedError)
 
 		createdLessonsImporter := &CreatedLessonsImporter{
@@ -487,7 +487,7 @@ func TestSetMaxLessonId(t *testing.T) {
 		expectedError := errors.New("expected error")
 		expectedLessonMaxId := uint(20)
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Set", uintToBytes(expectedLessonMaxId)).Once().Return(expectedError)
 
 		createdLessonsImporter := &CreatedLessonsImporter{
@@ -505,7 +505,7 @@ func TestSetMaxLessonId(t *testing.T) {
 	t.Run("Lesson max id chan", func(t *testing.T) {
 		expectedLessonMaxId := uint(50)
 
-		fileStorageMock := fileStorage.NewMockInterface(t)
+		fileStorageMock := fileStorageMocks.NewInterface(t)
 		fileStorageMock.On("Set", uintToBytes(expectedLessonMaxId)).Once().Return(nil)
 
 		createdLessonsImporter := &CreatedLessonsImporter{
