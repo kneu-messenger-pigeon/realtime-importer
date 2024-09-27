@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
@@ -10,7 +11,6 @@ import (
 	"github.com/kneu-messenger-pigeon/fileStorage"
 	"github.com/segmentio/kafka-go"
 	"io"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -186,12 +186,10 @@ func (importer *CreatedLessonsImporter) pullCreatedLessons() error {
 
 func (importer *CreatedLessonsImporter) getLessonMaxId() uint {
 	if importer.lessonMaxId == 0 {
-		var uint64Value uint64
-		stringValue, err := importer.storage.Get()
+		storageValue, err := importer.storage.Get()
 
-		if stringValue != "" {
-			uint64Value, err = strconv.ParseUint(stringValue, 10, 0)
-			importer.lessonMaxId = uint(uint64Value)
+		if storageValue != nil && len(storageValue) >= 8 {
+			importer.lessonMaxId = uint(binary.LittleEndian.Uint64(storageValue))
 
 		} else if err == nil {
 			// storage not exist or empty
@@ -220,7 +218,10 @@ func (importer *CreatedLessonsImporter) getLessonMaxId() uint {
 func (importer *CreatedLessonsImporter) setLessonMaxId(newLastId uint) (err error) {
 	if importer.lessonMaxId < newLastId {
 		importer.lessonMaxId = newLastId
-		err = importer.storage.Set(strconv.FormatUint(uint64(newLastId), 10))
+
+		storageValue := make([]byte, 8)
+		binary.LittleEndian.PutUint64(storageValue, uint64(newLastId))
+		err = importer.storage.Set(storageValue)
 		if err != nil {
 			fmt.Fprintf(importer.out, "[%s] Failed to write LessonMaxId %v \n", t(), err)
 		}

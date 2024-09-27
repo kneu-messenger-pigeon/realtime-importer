@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-const DeletedScoreQuery = ScoreSelect + ` WHERE XI_2 IN (?) ` + ScoreSelectOrderBy
-const CustomGroupDeletedScoreQuery = ScoreSelect + ` WHERE ID_ZANCG IN (?) ` + ScoreSelectOrderBy
+const DeletedScoreQuery = ScoreSelect + ` WHERE XI_2 IN (?) AND ID_T_PD_CMS IS NOT NULL ` + ScoreSelectOrderBy
+const CustomGroupDeletedScoreQuery = ScoreSelect + ` WHERE ID_ZANCG IN (?) AND ID_T_PD_CMS IS NOT NULL ` + ScoreSelectOrderBy
 
 type DeletedScoresImporterInterface interface {
 	Execute(context context.Context)

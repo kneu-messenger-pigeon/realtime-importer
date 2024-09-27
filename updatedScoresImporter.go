@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
@@ -16,7 +17,7 @@ import (
 
 const StorageTimeFormat = time.RFC3339
 
-const UpdateScoreQuery = ScoreSelect + ` WHERE REGDATE > ? ` + ScoreSelectOrderBy
+const UpdateScoreQuery = ScoreSelect + ` WHERE REGDATE > ? AND ID_T_PD_CMS IS NOT NULL ` + ScoreSelectOrderBy
 
 type UpdatedScoresImporterInterface interface {
 	Execute(context context.Context)
@@ -189,12 +190,14 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 
 func (importer *UpdatedScoresImporter) getLastRegDate() time.Time {
 	if importer.lastRegDate.IsZero() {
-		stringValue, err := importer.storage.Get()
-		if stringValue == "" && err == nil { // storage not exist or empty. Make initial value
+		bytesValue, err := importer.storage.Get()
+		if bytesValue == nil && err == nil { // storage not exist or empty. Make initial value
 			importer.lastRegDate = time.Now().Add(-time.Minute)
 
 		} else if err == nil {
-			importer.lastRegDate, err = time.ParseInLocation(StorageTimeFormat, stringValue, time.Local)
+			importer.lastRegDate = time.Unix(
+				int64(binary.LittleEndian.Uint64(bytesValue)), 0,
+			)
 		}
 
 		if err != nil {
@@ -211,7 +214,10 @@ func (importer *UpdatedScoresImporter) setLastRegDate(newLastRegDate time.Time) 
 	if importer.lastRegDate != newLastRegDate {
 		newLastRegDate.In(time.Local)
 		importer.lastRegDate = newLastRegDate
-		err = importer.storage.Set(newLastRegDate.Format(StorageTimeFormat))
+
+		value := make([]byte, 8)
+		binary.LittleEndian.PutUint64(value, uint64(newLastRegDate.Unix()))
+		err = importer.storage.Set(value)
 		if err != nil {
 			fmt.Fprintf(importer.out, "[%s] Failed to write LessonMaxId %v \n", t(), err)
 		}

@@ -55,8 +55,10 @@ github.com/kneu-messenger-pigeon/dekanat-events v0.1.10 h1:GMuL+pWW5MVH+Zl7cY+Nr
 github.com/kneu-messenger-pigeon/dekanat-events v0.1.10/go.mod h1:KC0hflA3057dtpg2Mtpbhma9Z3n8Y43vwyygZODzO/Y=
 github.com/kneu-messenger-pigeon/events v0.1.41 h1:Yzzp7oyVArzKzzI93HmLX+k3lUn8E3dKUk9uNF3le+8=
 github.com/kneu-messenger-pigeon/events v0.1.41/go.mod h1:Q6X8B9gKZpKbby9gisLumvGT1xCWBM7bAFnviYi6MBQ=
-github.com/kneu-messenger-pigeon/fileStorage v1.0.1 h1:9ncIZaUXDv5SwB5KtWae/CSYYye1m/z4R7hU1WmBnWQ=
-github.com/kneu-messenger-pigeon/fileStorage v1.0.1/go.mod h1:v6IRKfG5C45B6Ls6781bmnLNwAE3e6ZcWuU0N55l66M=
+github.com/kneu-messenger-pigeon/fileStorage v1.1.1 h1:+UnSwQ2ADQq41WemAl0LvvGMYiRGnnPPRqlSYpnDeFk=
+github.com/kneu-messenger-pigeon/fileStorage v1.1.1/go.mod h1:v6IRKfG5C45B6Ls6781bmnLNwAE3e6ZcWuU0N55l66M=
+github.com/kneu-messenger-pigeon/fileStorage v1.1.2 h1:kH8AklG9rTxF1t8+ZdjALizAXOh9QCYV1qEwk8pPTfA=
+github.com/kneu-messenger-pigeon/fileStorage v1.1.2/go.mod h1:v6IRKfG5C45B6Ls6781bmnLNwAE3e6ZcWuU0N55l66M=
 github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.2 h1:jtKQpIefoZBJzgniS4+wM/HU+IgAPkhdOZa4B52RZA0=
 github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.2/go.mod h1:HxDZwQUrMLgZNdLFT1llblZ7Zj6EBpBk7+9tcU4NZCk=
 github.com/mattn/go-sqlite3 v1.14.16 h1:yOQRA0RpS5PFz/oikGwBEqvAWhWg5ufRz4ETLjwpU1Y=

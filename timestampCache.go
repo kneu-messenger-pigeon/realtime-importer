@@ -38,7 +38,7 @@ func idToBytes(id uint, isCustomGroup bool) []byte {
 }
 
 func uintToBytes(input uint) []byte {
-	idBytes := make([]byte, 4)
+	idBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint32(idBytes, uint32(input))
 	return idBytes
 }

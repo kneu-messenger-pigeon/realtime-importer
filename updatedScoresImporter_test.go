@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
@@ -27,6 +28,12 @@ var scoreSelectExpectedColumns = []string{
 	"CUSTOM_GROUP_LESSON_ID", // custom group lesson id
 	"DISCIPLINE_ID", "SEMESTER",
 	"SCORE", "IS_ABSENT", "REGDATE", "IS_DELETED",
+}
+
+func timeToBytes(t time.Time) []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(t.Unix()))
+	return b
 }
 
 func TestExecuteImportUpdatedScores(t *testing.T) {
@@ -116,8 +123,8 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		dbMock.ExpectRollback()
 
 		fileStorageMock := fileStorage.NewMockInterface(t)
-		fileStorageMock.On("Get").Times(2).Return("", nil)
-		fileStorageMock.On("Set", expectedEvent.UpdatedAt.Format(StorageTimeFormat)).Once().Return(nil)
+		fileStorageMock.On("Get").Times(2).Return(nil, nil)
+		fileStorageMock.On("Set", timeToBytes(expectedEvent.UpdatedAt)).Once().Return(nil)
 
 		writerMock := eventsMocks.NewWriterInterface(t)
 		writerMock.On(
@@ -220,7 +227,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 			dbMock.ExpectRollback()
 
 			fileStorageMock := fileStorage.NewMockInterface(t)
-			fileStorageMock.On("Get").Once().Return(lastRegDate.Format(StorageTimeFormat), nil)
+			fileStorageMock.On("Get").Once().Return(timeToBytes(lastRegDate), nil)
 
 			writerMock := eventsMocks.NewWriterInterface(t)
 
@@ -259,6 +266,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 
 			err := dbMock.ExpectationsWereMet()
 			assert.NoErrorf(t, err, "there were unfulfilled expectations: %s", err)
+			assert.NotContains(t, out.String(), "error", "output should not contain error message")
 
 			writerMock.AssertExpectations(t)
 			writerMock.AssertNotCalled(t, "WriteMessages")
@@ -325,9 +333,9 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		dbMock.ExpectRollback()
 
 		fileStorageMock := fileStorage.NewMockInterface(t)
-		fileStorageMock.On("Get").Once().Return(lastRegDate.Format(StorageTimeFormat), nil)
+		fileStorageMock.On("Get").Once().Return(timeToBytes(lastRegDate), nil)
 		fileStorageMock.On(
-			"Set", expectedEvent.UpdatedAt.Format(StorageTimeFormat),
+			"Set", timeToBytes(expectedEvent.UpdatedAt),
 		).Once().Return(nil)
 
 		writerMock := eventsMocks.NewWriterInterface(t)
@@ -414,7 +422,7 @@ func TestImportUpdatedScoresLesson(t *testing.T) {
 		dbMock.ExpectBegin().WillReturnError(expectedError)
 
 		fileStorageMock := fileStorage.NewMockInterface(t)
-		fileStorageMock.On("Get").Once().Return("", nil)
+		fileStorageMock.On("Get").Once().Return(nil, nil)
 
 		writerMock := eventsMocks.NewWriterInterface(t)
 
@@ -469,7 +477,7 @@ func TestGetLastRegDate(t *testing.T) {
 		expectedError := errors.New("expected error")
 
 		fileStorageMock := fileStorage.NewMockInterface(t)
-		fileStorageMock.On("Get").Once().Return("", expectedError)
+		fileStorageMock.On("Get").Once().Return(nil, expectedError)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:     &out,
@@ -500,7 +508,7 @@ func TestSetLastRegDate(t *testing.T) {
 
 		fileStorageMock := fileStorage.NewMockInterface(t)
 		fileStorageMock.On(
-			"Set", newLastRegDate.Format(StorageTimeFormat),
+			"Set", timeToBytes(newLastRegDate),
 		).Once().Return(expectedError)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{

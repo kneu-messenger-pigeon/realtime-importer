@@ -11,7 +11,6 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -22,7 +21,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 
 		reader := mocks.NewReaderInterface(t)
 		storage := fileStorage.NewMockInterface(t)
-		storage.On("Get").Return("", nil)
+		storage.On("Get").Return(nil, nil)
 
 		currentYearWatcher := CurrentYearWatcher{
 			out:     &out,
@@ -71,8 +70,11 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 		reader.On("CommitMessages", matchContext, message).Return(expectedError)
 
 		storage := fileStorage.NewMockInterface(t)
-		storage.On("Get").Return("2024", nil)
-		storage.On("Set", strconv.Itoa(expectedYear)).Return(nil)
+		storage.On("Get").Return(uintToBytes(2024), nil)
+		storage.On(
+			"Set",
+			uintToBytes(uint(expectedYear))[0:2],
+		).Return(nil)
 
 		currentYearWatcher := CurrentYearWatcher{
 			out:     &out,
@@ -124,7 +126,7 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 		}, expectedError)
 
 		storage := fileStorage.NewMockInterface(t)
-		storage.On("Get").Return("2024", nil)
+		storage.On("Get").Return(uintToBytes(2024), nil)
 
 		currentYearWatcher := CurrentYearWatcher{
 			out:     &out,
@@ -172,8 +174,11 @@ func TestExecuteCurrentYearWatcher(t *testing.T) {
 		}, nil)
 
 		storage := fileStorage.NewMockInterface(t)
-		storage.On("Get").Return("2024", nil)
-		storage.On("Set", strconv.Itoa(expectedYear)).Return(expectedError)
+		storage.On("Get").Return(uintToBytes(2024), nil)
+		storage.On(
+			"Set",
+			uintToBytes(uint(expectedYear))[0:2],
+		).Return(expectedError)
 
 		currentYearWatcher := CurrentYearWatcher{
 			out:     &out,
