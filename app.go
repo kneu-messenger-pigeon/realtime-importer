@@ -101,7 +101,7 @@ func MakeEventLoop(out io.Writer, dbPool *[ConnectionPoolSize]*sql.DB, appConfig
 			},
 		),
 		storage: &fileStorage.Storage{
-			File: appConfig.storageDir + "current-year.txt",
+			File: appConfig.storageDir + "current-year.bin",
 		},
 	}
 
@@ -112,7 +112,7 @@ func MakeEventLoop(out io.Writer, dbPool *[ConnectionPoolSize]*sql.DB, appConfig
 		db:    dbPool[0],
 		cache: NewTimeCache(1),
 		storage: &fileStorage.Storage{
-			File: appConfig.storageDir + "created-lessons-state.txt",
+			File: appConfig.storageDir + "created-lessons-state.bin",
 		},
 		writer:                lessonsWriter,
 		currentYear:           currentYearWatcher,
@@ -134,7 +134,7 @@ func MakeEventLoop(out io.Writer, dbPool *[ConnectionPoolSize]*sql.DB, appConfig
 		db:    dbPool[2],
 		cache: NewTimeCache(1),
 		storage: &fileStorage.Storage{
-			File: appConfig.storageDir + "update-scores-state.txt",
+			File: appConfig.storageDir + "update-scores-state.bin",
 		},
 		writer:      scoresWriter,
 		currentYear: currentYearWatcher,

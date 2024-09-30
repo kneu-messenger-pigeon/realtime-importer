@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const YearStorageLength = 2
+
 type CurrentYearGetterInterface interface {
 	GetYear() int
 }
@@ -31,7 +33,7 @@ type CurrentYearWatcher struct {
 
 func (watcher *CurrentYearWatcher) Execute(ctx context.Context) {
 	yearBytes, err := watcher.storage.Get()
-	if yearBytes != nil {
+	if yearBytes != nil && len(yearBytes) == YearStorageLength {
 		watcher.year = binary.LittleEndian.Uint16(yearBytes)
 	}
 	if watcher.year < 2022 {
@@ -47,7 +49,7 @@ func (watcher *CurrentYearWatcher) Execute(ctx context.Context) {
 			if err == nil {
 				watcher.year = uint16(event.Year)
 
-				yearBytes = make([]byte, 2)
+				yearBytes = make([]byte, YearStorageLength)
 				binary.LittleEndian.PutUint16(yearBytes, watcher.year)
 				err = watcher.storage.Set(yearBytes)
 			}

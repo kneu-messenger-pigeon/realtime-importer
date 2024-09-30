@@ -19,6 +19,8 @@ const StorageTimeFormat = time.RFC3339
 
 const UpdateScoreQuery = ScoreSelect + ` WHERE REGDATE > ? AND ID_T_PD_CMS IS NOT NULL ` + ScoreSelectOrderBy
 
+const LastRegDateStorageLength = 8
+
 type UpdatedScoresImporterInterface interface {
 	Execute(context context.Context)
 	AddEvent(event dekanatEvents.ScoreEditEvent)
@@ -191,13 +193,13 @@ func (importer *UpdatedScoresImporter) pullUpdatedScores() error {
 func (importer *UpdatedScoresImporter) getLastRegDate() time.Time {
 	if importer.lastRegDate.IsZero() {
 		bytesValue, err := importer.storage.Get()
-		if bytesValue == nil && err == nil { // storage not exist or empty. Make initial value
-			importer.lastRegDate = time.Now().Add(-time.Minute)
 
-		} else if err == nil {
+		if bytesValue != nil && len(bytesValue) == LastRegDateStorageLength {
 			importer.lastRegDate = time.Unix(
 				int64(binary.LittleEndian.Uint64(bytesValue)), 0,
 			)
+		} else if err == nil { // storage not exist or empty. Make initial value
+			importer.lastRegDate = time.Now().Add(-time.Minute)
 		}
 
 		if err != nil {
@@ -215,7 +217,7 @@ func (importer *UpdatedScoresImporter) setLastRegDate(newLastRegDate time.Time) 
 		newLastRegDate.In(time.Local)
 		importer.lastRegDate = newLastRegDate
 
-		value := make([]byte, 8)
+		value := make([]byte, LastRegDateStorageLength)
 		binary.LittleEndian.PutUint64(value, uint64(newLastRegDate.Unix()))
 		err = importer.storage.Set(value)
 		if err != nil {

@@ -19,6 +19,8 @@ const LessonsCreatedQuery = LessonsSelect + ` WHERE ID > ? ORDER BY ID ASC`
 
 const LessonDefaultLastIdQuery = `SELECT FIRST 1 ID FROM T_PRJURN WHERE REGDATE < ? ORDER BY ID DESC`
 
+const LastLessonIdStorageLength = 8
+
 type CreatedLessonsImporterInterface interface {
 	Execute(context context.Context)
 	AddEvent(event dekanatEvents.LessonCreateEvent)
@@ -188,7 +190,7 @@ func (importer *CreatedLessonsImporter) getLessonMaxId() uint {
 	if importer.lessonMaxId == 0 {
 		storageValue, err := importer.storage.Get()
 
-		if storageValue != nil && len(storageValue) >= 8 {
+		if storageValue != nil && len(storageValue) == LastLessonIdStorageLength {
 			importer.lessonMaxId = uint(binary.LittleEndian.Uint64(storageValue))
 
 		} else if err == nil {
@@ -219,7 +221,7 @@ func (importer *CreatedLessonsImporter) setLessonMaxId(newLastId uint) (err erro
 	if importer.lessonMaxId < newLastId {
 		importer.lessonMaxId = newLastId
 
-		storageValue := make([]byte, 8)
+		storageValue := make([]byte, LastLessonIdStorageLength)
 		binary.LittleEndian.PutUint64(storageValue, uint64(newLastId))
 		err = importer.storage.Set(storageValue)
 		if err != nil {
