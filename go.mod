@@ -3,21 +3,21 @@ module realtime-importer
 go 1.23
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/VictoriaMetrics/fastcache v1.12.1
-	github.com/VictoriaMetrics/metrics v1.24.0
+	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/VictoriaMetrics/fastcache v1.12.2
+	github.com/VictoriaMetrics/metrics v1.35.1
 	github.com/aws/aws-sdk-go-v2 v1.21.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.39
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.24.5
-	github.com/joho/godotenv v1.4.0
+	github.com/joho/godotenv v1.5.1
 	github.com/kneu-messenger-pigeon/dekanat-events v0.1.10
 	github.com/kneu-messenger-pigeon/events v0.1.41
-	github.com/kneu-messenger-pigeon/fileStorage v1.1.4
-	github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.2
-	github.com/mattn/go-sqlite3 v1.14.16
+	github.com/kneu-messenger-pigeon/fileStorage v1.1.6
+	github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.3
+	github.com/mattn/go-sqlite3 v1.14.23
 	github.com/nakagami/firebirdsql v0.9.11
-	github.com/segmentio/kafka-go v0.4.38
-	github.com/stretchr/testify v1.8.4
+	github.com/segmentio/kafka-go v0.4.47
+	github.com/stretchr/testify v1.9.0
 )
 
 require (
@@ -41,12 +41,12 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/valyala/fastrand v1.1.0 // indirect
 	github.com/valyala/histogram v1.2.0 // indirect
 	gitlab.com/nyarla/go-crypt v0.0.0-20160106005555-d9a5dc2b789b // indirect
 	golang.org/x/crypto v0.17.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/mathutil v1.4.2-0.20220822142738-b13e5b564332 // indirect
