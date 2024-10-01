@@ -15,7 +15,7 @@ require (
 	github.com/kneu-messenger-pigeon/fileStorage v1.1.4
 	github.com/kneu-messenger-pigeon/victoria-metrics-init v0.1.2
 	github.com/mattn/go-sqlite3 v1.14.16
-	github.com/nakagami/firebirdsql v0.9.4
+	github.com/nakagami/firebirdsql v0.9.11
 	github.com/segmentio/kafka-go v0.4.38
 	github.com/stretchr/testify v1.8.4
 )
@@ -45,9 +45,9 @@ require (
 	github.com/valyala/fastrand v1.1.0 // indirect
 	github.com/valyala/histogram v1.2.0 // indirect
 	gitlab.com/nyarla/go-crypt v0.0.0-20160106005555-d9a5dc2b789b // indirect
-	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	modernc.org/mathutil v1.4.1 // indirect
+	modernc.org/mathutil v1.4.2-0.20220822142738-b13e5b564332 // indirect
 )
