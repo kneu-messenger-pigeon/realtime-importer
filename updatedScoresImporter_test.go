@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
@@ -31,8 +30,7 @@ var scoreSelectExpectedColumns = []string{
 }
 
 func timeToBytes(t time.Time) []byte {
-	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, uint64(t.Unix()))
+	b, _ := t.MarshalBinary()
 	return b
 }
 
@@ -48,6 +46,13 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 	var matchContext = mock.MatchedBy(func(ctx context.Context) bool { return true })
 
 	lastRegDate := time.Now().Add(-time.Minute * 20)
+	lastRegDate = lastRegDate.Add(-time.Duration(lastRegDate.Nanosecond()))
+
+	lastRegDate = time.Date(
+		lastRegDate.Year(), lastRegDate.Month(), lastRegDate.Day(),
+		lastRegDate.Hour(), lastRegDate.Minute(), lastRegDate.Second(),
+		0, lastRegDate.Location(),
+	)
 
 	syncedAtRewrite := time.Now()
 	syncedAtRewrite = time.Date(
@@ -80,6 +85,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 				IsDeleted: true,
 			},
 			SyncedAt:    syncedAtRewrite,
+			UpdatedAt:   syncedAtRewrite,
 			ScoreSource: events.Realtime,
 		}
 
@@ -105,9 +111,11 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		}
 
 		rows := sqlmock.NewRows(scoreSelectExpectedColumns).AddRow(
-			expectedEvent.Id, expectedEvent.StudentId, expectedEvent.LessonId, expectedEvent.LessonPart,
+			expectedEvent.Id, expectedEvent.StudentId,
+			expectedEvent.LessonId, expectedEvent.LessonPart,
 			customGroupLessonIdSql,
-			expectedEvent.DisciplineId, expectedEvent.Semester, expectedEvent.Value, expectedEvent.IsAbsent,
+			expectedEvent.DisciplineId, expectedEvent.Semester,
+			expectedEvent.Value, expectedEvent.IsAbsent,
 			expectedEvent.UpdatedAt, expectedEvent.IsDeleted,
 		)
 
@@ -123,7 +131,7 @@ func TestExecuteImportUpdatedScores(t *testing.T) {
 		dbMock.ExpectRollback()
 
 		fileStorageMock := fileStorageMocks.NewInterface(t)
-		fileStorageMock.On("Get").Times(2).Return(nil, nil)
+		fileStorageMock.On("Get").Times(1).Return(nil, nil)
 		fileStorageMock.On("Set", timeToBytes(expectedEvent.UpdatedAt)).Once().Return(nil)
 
 		writerMock := eventsMocks.NewWriterInterface(t)
@@ -484,7 +492,7 @@ func TestGetLastRegDate(t *testing.T) {
 			storage: fileStorageMock,
 		}
 
-		mixExpectedLastRegDate := time.Now()
+		mixExpectedLastRegDate := time.Now().Add(-time.Minute * 1)
 		actualLastRegDate := updatedLessonsImporter.getLastRegDate()
 
 		assert.True(t, actualLastRegDate.After(mixExpectedLastRegDate))
@@ -506,10 +514,14 @@ func TestSetLastRegDate(t *testing.T) {
 			0, now.Location(),
 		).Add(-time.Minute * 10)
 
+		var matchDatetimeContext = mock.MatchedBy(func(b []byte) bool {
+			var v time.Time
+			err := v.UnmarshalBinary(b)
+			return assert.NoError(t, err) && assert.Equal(t, newLastRegDate, v)
+		})
+
 		fileStorageMock := fileStorageMocks.NewInterface(t)
-		fileStorageMock.On(
-			"Set", timeToBytes(newLastRegDate),
-		).Once().Return(expectedError)
+		fileStorageMock.On("Set", matchDatetimeContext).Once().Return(expectedError)
 
 		updatedLessonsImporter := &UpdatedScoresImporter{
 			out:     &out,
@@ -521,6 +533,6 @@ func TestSetLastRegDate(t *testing.T) {
 		assert.Error(t, actualError)
 		assert.Equal(t, expectedError, actualError)
 
-		assert.Contains(t, out.String(), "Failed to write LessonMaxId "+expectedError.Error())
+		assert.Contains(t, out.String(), "Failed to write setLastRegDate "+expectedError.Error())
 	})
 }

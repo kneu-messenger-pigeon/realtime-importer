@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
@@ -18,8 +17,6 @@ import (
 const StorageTimeFormat = time.RFC3339
 
 const UpdateScoreQuery = ScoreSelect + ` WHERE REGDATE > ? AND ID_T_PD_CMS IS NOT NULL ` + ScoreSelectOrderBy
-
-const LastRegDateStorageLength = 8
 
 type UpdatedScoresImporterInterface interface {
 	Execute(context context.Context)
@@ -194,18 +191,17 @@ func (importer *UpdatedScoresImporter) getLastRegDate() time.Time {
 	if importer.lastRegDate.IsZero() {
 		bytesValue, err := importer.storage.Get()
 
-		if bytesValue != nil && len(bytesValue) == LastRegDateStorageLength {
-			importer.lastRegDate = time.Unix(
-				int64(binary.LittleEndian.Uint64(bytesValue)), 0,
-			)
-		} else if err == nil { // storage not exist or empty. Make initial value
-			importer.lastRegDate = time.Now().Add(-time.Minute)
+		if err == nil {
+			err = importer.lastRegDate.UnmarshalBinary(bytesValue)
 		}
 
 		if err != nil {
 			fmt.Fprintf(importer.out, "[%s] Failed to get score Last Rag Date from file %v \n", t(), err)
+		}
+
+		if importer.lastRegDate.IsZero() {
 			// set non zero for prevent repeat error
-			importer.lastRegDate = time.Now()
+			importer.lastRegDate = time.Now().Add(-time.Minute)
 		}
 	}
 
@@ -213,15 +209,15 @@ func (importer *UpdatedScoresImporter) getLastRegDate() time.Time {
 }
 
 func (importer *UpdatedScoresImporter) setLastRegDate(newLastRegDate time.Time) (err error) {
-	if importer.lastRegDate != newLastRegDate {
-		newLastRegDate.In(time.Local)
-		importer.lastRegDate = newLastRegDate
-
-		value := make([]byte, LastRegDateStorageLength)
-		binary.LittleEndian.PutUint64(value, uint64(newLastRegDate.Unix()))
+	if !importer.lastRegDate.Equal(newLastRegDate) {
+		importer.lastRegDate = newLastRegDate.In(time.Local)
+		fmt.Printf("newLastRegDate: %+v\n", newLastRegDate)
+		var value []byte
+		value, _ = importer.lastRegDate.MarshalBinary()
 		err = importer.storage.Set(value)
+
 		if err != nil {
-			fmt.Fprintf(importer.out, "[%s] Failed to write LessonMaxId %v \n", t(), err)
+			fmt.Fprintf(importer.out, "[%s] Failed to write setLastRegDate %v \n", t(), err)
 		}
 	}
 	return
