@@ -1,6 +1,6 @@
 module realtime-importer
 
-go 1.20
+go 1.23
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
