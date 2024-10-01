@@ -211,9 +211,8 @@ func (importer *UpdatedScoresImporter) getLastRegDate() time.Time {
 func (importer *UpdatedScoresImporter) setLastRegDate(newLastRegDate time.Time) (err error) {
 	if !importer.lastRegDate.Equal(newLastRegDate) {
 		importer.lastRegDate = newLastRegDate.In(time.Local)
-		fmt.Printf("newLastRegDate: %+v\n", newLastRegDate)
-		var value []byte
-		value, _ = importer.lastRegDate.MarshalBinary()
+
+		value, _ := importer.lastRegDate.MarshalBinary()
 		err = importer.storage.Set(value)
 
 		if err != nil {
